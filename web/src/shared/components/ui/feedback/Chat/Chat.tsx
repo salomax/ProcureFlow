@@ -80,8 +80,8 @@ export const Chat: React.FC<ChatProps> = ({
   }, [messages]);
 
   // Handle message submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.KeyboardEvent) => {
+    e?.preventDefault();
     if (!inputValue.trim() || isLoading || disabled) return;
 
     const userMessage = inputValue.trim();
@@ -217,7 +217,7 @@ export const Chat: React.FC<ChatProps> = ({
           maxRows={4}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onKeyDown={handleKeyDown as any}
           placeholder={placeholder}
           disabled={disabled || isLoading}
           sx={{ flex: 1 }}

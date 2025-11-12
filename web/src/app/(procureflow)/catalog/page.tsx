@@ -7,7 +7,12 @@ import { useCatalog, CatalogItemFormData } from '@/lib/hooks/catalog/useCatalog'
 import { useTranslation } from '@/shared/i18n';
 import { catalogTranslations } from './i18n';
 import { useToast } from '@/shared/providers';
-import { extractErrorMessage } from '@/lib/hooks/customer/utils';
+// Utility function to extract error messages from various error types
+const extractErrorMessage = (err: any, defaultMessage: string) => {
+  if (err?.message) return err.message;
+  if (typeof err === 'string') return err;
+  return defaultMessage;
+};
 
 export default function CatalogPage() {
   const { t } = useTranslation(catalogTranslations);

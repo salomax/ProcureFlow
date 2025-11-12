@@ -25,7 +25,6 @@ export const SignInDocument = gql`
   }
 }
     `;
-export type SignInMutationFn = ApolloReactCommon.MutationFunction<SignInMutation, SignInMutationVariables>;
 
 /**
  * __useSignInMutation__
@@ -50,4 +49,3 @@ export function useSignInMutation(baseOptions?: ApolloReactHooks.MutationHookOpt
       }
 export type SignInMutationHookResult = ReturnType<typeof useSignInMutation>;
 export type SignInMutationResult = ApolloReactCommon.MutationResult<SignInMutation>;
-export type SignInMutationOptions = ApolloReactCommon.BaseMutationOptions<SignInMutation, SignInMutationVariables>;

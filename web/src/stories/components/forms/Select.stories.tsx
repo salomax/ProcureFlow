@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { SelectField } from '@/shared/components/ui/forms/form/SelectField';
 import { Stack, Box } from '@mui/material';
+import { FormProvider, useForm } from 'react-hook-form';
 
 const meta: Meta<typeof SelectField> = {
   title: 'Components/Forms/Select',
@@ -18,30 +19,10 @@ const meta: Meta<typeof SelectField> = {
       control: { type: 'text' },
       description: 'Label for the select field'
     },
-    placeholder: {
-      control: { type: 'text' },
-      description: 'Placeholder text'
-    },
     helperText: {
       control: { type: 'text' },
       description: 'Helper text below the field'
     },
-    error: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is in error state'
-    },
-    disabled: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is disabled'
-    },
-    required: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is required'
-    },
-    multiple: {
-      control: { type: 'boolean' },
-      description: 'Whether multiple selections are allowed'
-    }
   },
   tags: ['autodocs'],
 };
@@ -58,34 +39,45 @@ const options = [
 
 export const Default: Story = {
   args: {
+    name: 'select',
     label: 'Select Option',
     options,
   },
 };
 
 export const States: Story = {
-  render: () => (
-    <Stack spacing={3} sx={{ width: 300 }}>
-      <SelectField label="Normal" options={options} />
-      <SelectField label="With Helper Text" options={options} helperText="Choose an option" />
-      <SelectField label="Error State" options={options} error helperText="This field has an error" />
-      <SelectField label="Disabled" options={options} disabled />
-      <SelectField label="Required" options={options} required />
-    </Stack>
-  ),
+  render: () => {
+    const methods = useForm();
+    return (
+      <FormProvider {...methods}>
+        <Stack spacing={3} sx={{ width: 300 }}>
+          <SelectField name="normal" label="Normal" options={options} />
+          <SelectField name="helper" label="With Helper Text" options={options} helperText="Choose an option" />
+          <SelectField name="error" label="Error State" options={options} helperText="This field has an error" />
+          <SelectField name="disabled" label="Disabled" options={options} />
+          <SelectField name="required" label="Required" options={options} />
+        </Stack>
+      </FormProvider>
+    );
+  },
 };
 
 export const Multiple: Story = {
-  render: () => (
-    <Box sx={{ width: 300 }}>
-      <SelectField 
-        label="Multiple Selection" 
-        options={options} 
-        multiple 
-        helperText="Hold Ctrl/Cmd to select multiple options"
-      />
-    </Box>
-  ),
+  render: () => {
+    const methods = useForm();
+    return (
+      <FormProvider {...methods}>
+        <Box sx={{ width: 300 }}>
+          <SelectField 
+            name="multiple"
+            label="Multiple Selection" 
+            options={options} 
+            helperText="Select an option"
+          />
+        </Box>
+      </FormProvider>
+    );
+  },
 };
 
 export const WithGroups: Story = {
@@ -99,14 +91,18 @@ export const WithGroups: Story = {
       { value: 'broccoli', label: 'Broccoli', group: 'Category 2' },
     ];
     
+    const methods = useForm();
     return (
-      <Box sx={{ width: 300 }}>
-        <SelectField 
-          label="Grouped Options" 
-          options={groupedOptions}
-          helperText="Options are grouped by category"
-        />
-      </Box>
+      <FormProvider {...methods}>
+        <Box sx={{ width: 300 }}>
+          <SelectField 
+            name="grouped"
+            label="Grouped Options" 
+            options={groupedOptions}
+            helperText="Options are grouped by category"
+          />
+        </Box>
+      </FormProvider>
     );
   },
 };

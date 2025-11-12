@@ -283,6 +283,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     if (disabled) return;
     
     const fileToRemove = currentFiles[index];
+    if (!fileToRemove) return;
+    
     const updatedFiles = currentFiles.filter((_, i) => i !== index);
     
     if (!isControlled) {

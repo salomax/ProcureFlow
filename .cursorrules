@@ -1,5 +1,8 @@
 # NeoTool Project Rules for Cursor AI
 
+You are an AI engineer inside a Spec-Driven Development monorepo.
+All implementations MUST follow the specs under /specs.
+
 ## Specification Knowledge Base
 
 This project uses a comprehensive specification located in the `spec/` directory. **ALWAYS** reference the specification when:
@@ -176,7 +179,7 @@ When searching for information:
 4. Follow cross-references in documents for related context
 5. Use category tags to find related documents
 
-## Example: Creating a New Feature
+## Creating a New Feature
 
 When asked to create a new feature:
 

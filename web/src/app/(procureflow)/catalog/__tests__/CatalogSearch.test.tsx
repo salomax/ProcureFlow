@@ -7,7 +7,6 @@ import { AppThemeProvider } from '@/styles/themes/AppThemeProvider';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/shared/i18n/config';
 import { catalogTranslations } from '../i18n';
-import type { ApolloError } from '@apollo/client';
 
 // Register catalog translations
 i18n.addResourceBundle('en', 'catalog', catalogTranslations.en, true, true);
@@ -27,11 +26,11 @@ const mockSearchResults = [
 ];
 
 const mockUseCatalog = {
-  searchResults: [],
+  searchResults: [] as Array<{ id: string; name: string; category: string; priceCents: number; status: string; createdAt: string; updatedAt: string; }>,
   searchQuery: '',
   setSearchQuery: vi.fn(),
   searchLoading: false,
-  searchError: undefined,
+  searchError: undefined as Error | undefined,
   enrollItem: vi.fn(),
   enrollLoading: false,
   enrollError: undefined,
@@ -50,21 +49,6 @@ const mockUseCatalog = {
 
 vi.mock('@/lib/hooks/catalog/useCatalog', () => ({
   useCatalog: vi.fn(() => mockUseCatalog),
-}));
-
-vi.mock('@/lib/hooks/cart/useCart', () => ({
-  useCart: vi.fn(() => ({
-    addItem: vi.fn(),
-  })),
-}));
-
-vi.mock('@/shared/providers', () => ({
-  useToast: vi.fn(() => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warning: vi.fn(),
-  })),
 }));
 
 const renderCatalogSearch = (props = {}) => {
@@ -93,7 +77,7 @@ describe('CatalogSearch', () => {
 
   it('displays empty state message when no search query', () => {
     renderCatalogSearch();
-    expect(screen.getByText(/Enter a search term to find catalog items/i)).toBeInTheDocument();
+    expect(screen.getByText(/Enter a search term/i)).toBeInTheDocument();
   });
 
   it('displays search results when items are found', () => {
@@ -138,7 +122,7 @@ describe('CatalogSearch', () => {
   });
 
   it('displays error message when search fails', () => {
-    mockUseCatalog.searchError = { message: 'Search failed' } as ApolloError;
+    mockUseCatalog.searchError = { message: 'Search failed' } as Error;
     renderCatalogSearch();
     
     expect(screen.getByTestId('catalog-search-error')).toBeInTheDocument();

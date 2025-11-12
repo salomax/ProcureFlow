@@ -52,7 +52,7 @@ export function useSearchCatalogItemsLazyQuery(baseOptions?: ApolloReactHooks.La
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<SearchCatalogItemsQuery, SearchCatalogItemsQueryVariables>(SearchCatalogItemsDocument, options);
         }
-export function useSearchCatalogItemsSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<SearchCatalogItemsQuery, SearchCatalogItemsQueryVariables>) {
+export function useSearchCatalogItemsSuspenseQuery(baseOptions: ApolloReactHooks.SkipToken | (ApolloReactHooks.SuspenseQueryHookOptions<SearchCatalogItemsQuery, SearchCatalogItemsQueryVariables> & { variables: SearchCatalogItemsQueryVariables })) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<SearchCatalogItemsQuery, SearchCatalogItemsQueryVariables>(SearchCatalogItemsDocument, options);
         }
@@ -92,7 +92,7 @@ export function useGetCatalogItemLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<GetCatalogItemQuery, GetCatalogItemQueryVariables>(GetCatalogItemDocument, options);
         }
-export function useGetCatalogItemSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetCatalogItemQuery, GetCatalogItemQueryVariables>) {
+export function useGetCatalogItemSuspenseQuery(baseOptions: ApolloReactHooks.SkipToken | (ApolloReactHooks.SuspenseQueryHookOptions<GetCatalogItemQuery, GetCatalogItemQueryVariables> & { variables: GetCatalogItemQueryVariables })) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<GetCatalogItemQuery, GetCatalogItemQueryVariables>(GetCatalogItemDocument, options);
         }

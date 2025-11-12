@@ -378,12 +378,11 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           onClick={handleOpen}
           onFocus={handleOpen}
           disabled={disabled}
-          readOnly={readOnly}
           required={required}
           error={error || !!errorMessage}
           fullWidth
           InputProps={{
-            readOnly: true,
+            readOnly: readOnly ?? true,
             endAdornment: showCalendarIcon ? (
               <InputAdornment position="end">
                 <IconButton
@@ -438,7 +437,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
                   shouldDisableDate={shouldDisableDate}
                   disablePast={disablePast}
                   disableFuture={disableFuture}
-                  defaultCalendarMonth={leftCalendarMonth}
                   onMonthChange={(newMonth) => {
                     // Only update month when user manually navigates, not when selecting dates
                     // DateRangeCalendar behavior: keep calendars adjacent
@@ -483,7 +481,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
                   shouldDisableDate={shouldDisableDate}
                   disablePast={disablePast}
                   disableFuture={disableFuture}
-                  defaultCalendarMonth={rightCalendarMonth}
                   onMonthChange={(newMonth) => {
                     // Only update month when user manually navigates, not when selecting dates
                     // DateRangeCalendar behavior: keep calendars adjacent

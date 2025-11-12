@@ -30,7 +30,6 @@ export const CheckoutDocument = gql`
   }
 }
     `;
-export type CheckoutMutationFn = ApolloReactCommon.MutationFunction<CheckoutMutation, CheckoutMutationVariables>;
 
 /**
  * __useCheckoutMutation__
@@ -55,4 +54,3 @@ export function useCheckoutMutation(baseOptions?: ApolloReactHooks.MutationHookO
       }
 export type CheckoutMutationHookResult = ReturnType<typeof useCheckoutMutation>;
 export type CheckoutMutationResult = ApolloReactCommon.MutationResult<CheckoutMutation>;
-export type CheckoutMutationOptions = ApolloReactCommon.BaseMutationOptions<CheckoutMutation, CheckoutMutationVariables>;

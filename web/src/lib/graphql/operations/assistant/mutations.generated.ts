@@ -27,7 +27,6 @@ export const ChatDocument = gql`
   }
 }
     `;
-export type ChatMutationFn = ApolloReactCommon.MutationFunction<ChatMutation, ChatMutationVariables>;
 
 /**
  * __useChatMutation__
@@ -52,13 +51,12 @@ export function useChatMutation(baseOptions?: ApolloReactHooks.MutationHookOptio
       }
 export type ChatMutationHookResult = ReturnType<typeof useChatMutation>;
 export type ChatMutationResult = ApolloReactCommon.MutationResult<ChatMutation>;
-export type ChatMutationOptions = ApolloReactCommon.BaseMutationOptions<ChatMutation, ChatMutationVariables>;
+
 export const ClearConversationDocument = gql`
     mutation ClearConversation($sessionId: String!) {
   clearConversation(sessionId: $sessionId)
 }
     `;
-export type ClearConversationMutationFn = ApolloReactCommon.MutationFunction<ClearConversationMutation, ClearConversationMutationVariables>;
 
 /**
  * __useClearConversationMutation__
@@ -83,4 +81,3 @@ export function useClearConversationMutation(baseOptions?: ApolloReactHooks.Muta
       }
 export type ClearConversationMutationHookResult = ReturnType<typeof useClearConversationMutation>;
 export type ClearConversationMutationResult = ApolloReactCommon.MutationResult<ClearConversationMutation>;
-export type ClearConversationMutationOptions = ApolloReactCommon.BaseMutationOptions<ClearConversationMutation, ClearConversationMutationVariables>;

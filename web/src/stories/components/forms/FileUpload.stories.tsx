@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { FileUploader } from '@/shared/components/ui/forms/form/FileUploader';
-import { Stack, Box, FormProvider, useForm } from '@mui/material';
+import { Stack, Box } from '@mui/material';
+import { FormProvider, useForm } from 'react-hook-form';
 
 const meta: Meta<typeof FileUploader> = {
   title: 'Components/Forms/FileUpload',
@@ -26,25 +27,9 @@ const meta: Meta<typeof FileUploader> = {
       control: { type: 'boolean' },
       description: 'Whether multiple files can be selected'
     },
-    maxSize: {
+    maxSizeMb: {
       control: { type: 'number' },
       description: 'Maximum file size in MB'
-    },
-    helperText: {
-      control: { type: 'text' },
-      description: 'Helper text below the field'
-    },
-    error: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is in error state'
-    },
-    disabled: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is disabled'
-    },
-    required: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is required'
     }
   },
   tags: ['autodocs'],

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { DatePickerField } from '@/shared/components/ui/forms/form/DatePickers';
-import { Stack, Box, FormProvider, useForm } from '@mui/material';
+import { Stack, Box } from '@mui/material';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useState } from 'react';
 
 const meta: Meta<typeof DatePickerField> = {
@@ -19,26 +20,9 @@ const meta: Meta<typeof DatePickerField> = {
       control: { type: 'text' },
       description: 'Label for the date picker'
     },
-    type: {
-      control: { type: 'select' },
-      options: ['date', 'time', 'datetime'],
-      description: 'Type of picker'
-    },
     helperText: {
       control: { type: 'text' },
       description: 'Helper text below the field'
-    },
-    error: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is in error state'
-    },
-    disabled: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is disabled'
-    },
-    required: {
-      control: { type: 'boolean' },
-      description: 'Whether the field is required'
     }
   },
   tags: ['autodocs'],

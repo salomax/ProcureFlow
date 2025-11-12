@@ -27,10 +27,6 @@ const meta: Meta<typeof RichTextEditor> = {
       control: { type: 'boolean' },
       description: 'Whether the editor is read-only'
     },
-    disabled: {
-      control: { type: 'boolean' },
-      description: 'Whether the editor is disabled'
-    },
     minHeight: {
       control: { type: 'number' },
       description: 'Minimum height of the editor in pixels'
@@ -104,10 +100,10 @@ export const States: Story = {
         />
       </Box>
       <Box>
-        <Typography variant="h6" gutterBottom>Disabled</Typography>
+        <Typography variant="h6" gutterBottom>Read Only</Typography>
         <RichTextEditor 
-          value="<p>This editor is disabled</p>"
-          disabled
+          value="<p>This editor is read-only</p>"
+          readOnly
           minHeight={200}
           maxHeight={300}
         />
