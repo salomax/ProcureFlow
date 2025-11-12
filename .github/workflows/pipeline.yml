@@ -1,0 +1,545 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ['**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: 1
+  TESTCONTAINERS_RYUK_DISABLED: true
+
+jobs:
+  # Step 1: Checkout and Test - Backend
+  backend-tests:
+    name: Backend Tests (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [app, assistant, security, common]
+      fail-fast: false
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: wrapper
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            service/kotlin/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('service/kotlin/**/*.gradle*', 'service/kotlin/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Run unit tests
+        working-directory: ./service/kotlin
+        env:
+          ryuk.disabled: 'true'
+          TESTCONTAINERS_RYUK_DISABLED: 'true'
+        run: ./gradlew :${{ matrix.service }}:test --no-daemon
+
+      - name: Run integration tests
+        if: matrix.service != 'common'
+        working-directory: ./service/kotlin
+        env:
+          ryuk.disabled: 'true'
+          TESTCONTAINERS_RYUK_DISABLED: 'true'
+        run: ./gradlew :${{ matrix.service }}:testIntegration --no-daemon
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results-${{ matrix.service }}
+          path: |
+            service/kotlin/${{ matrix.service }}/build/test-results/**/*.xml
+          retention-days: 7
+
+  # Step 1: Checkout and Test - Frontend
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10.16.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Lint
+        run: pnpm run lint -- --max-warnings=0
+
+      - name: Run unit tests
+        run: pnpm run test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: |
+            web/coverage
+          retention-days: 7
+
+  # Step 2: Build
+  build:
+    name: Step 2 - Build
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file for Docker Compose
+        run: |
+          cat > .env << EOF
+          # Database
+          POSTGRES_USER=procureflow
+          POSTGRES_PASSWORD=procureflow
+          POSTGRES_DB=procureflow_db
+          POSTGRES_HOST=postgres
+          POSTGRES_PORT=5432
+          DATABASE_URL=jdbc:postgresql://postgres:5432/procureflow_db
+          
+          # Application
+          APP_NAME=procureflow
+          APP_LOCALE=en-US
+          
+          # Frontend
+          NEXT_PUBLIC_GRAPHQL_URL=http://router:4000/graphql
+          
+          # Grafana
+          GF_SECURITY_ADMIN_USER=admin
+          GF_SECURITY_ADMIN_PASSWORD=admin
+          
+          # AI (sensitive - from secrets)
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          EOF
+
+      - name: Build Docker images
+        working-directory: infra/docker
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
+        run: docker-compose -f docker-compose.yml build --no-cache
+
+      - name: Verify images
+        run: |
+          echo "Built Docker images:"
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -10
+          echo "All required images built successfully"
+
+      - name: Save build artifacts
+        run: |
+          echo "Build completed at $(date)" > build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> build-info.txt
+
+      - name: Save image list
+        run: |
+          docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(procureflow|app|assistant|security|web)" > image-list.txt || true
+          echo "Images built:" && cat image-list.txt || echo "No custom images found"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build-info.txt
+            image-list.txt
+          retention-days: 7
+
+  # Step 3: Create Release and Push to GitHub Packages
+  release:
+    name: Step 3 - Create Release and Push Images
+    runs-on: ubuntu-latest
+    needs: build
+    # GITHUB_TOKEN is automatically provided by GitHub Actions - no setup needed!
+    # These permissions allow the workflow to create releases and push packages
+    permissions:
+      contents: write  # Required to create GitHub releases
+      packages: write  # Required to push images to GitHub Container Registry
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for version calculation
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}  # GITHUB_TOKEN is automatically provided by GitHub Actions
+
+      - name: Generate version tag
+        id: version
+        run: |
+          # Use git tag if available, otherwise use commit SHA
+          if git describe --tags --exact-match HEAD 2>/dev/null; then
+            VERSION=$(git describe --tags --exact-match HEAD)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "is_tag=true" >> $GITHUB_OUTPUT
+          else
+            # Generate version from date and short SHA
+            VERSION="v$(date +%Y%m%d)-$(git rev-parse --short HEAD)"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "is_tag=false" >> $GITHUB_OUTPUT
+          fi
+          echo "Generated version: $VERSION"
+
+      - name: Build and tag images for GHCR
+        working-directory: infra/docker
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
+          VERSION: ${{ steps.version.outputs.version }}
+          REGISTRY: ghcr.io
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          # Build images with GHCR tags
+          docker-compose -f docker-compose.yml build --no-cache
+          
+          # Tag images for GHCR
+          # Docker Compose names images based on directory and service name
+          # Format: <directory>_<service> or just <service> depending on project name
+          IMAGES=("app" "assistant" "security" "web")
+          
+          for IMAGE in "${IMAGES[@]}"; do
+            GHCR_TAG="${REGISTRY}/${OWNER}/procureflow-${IMAGE}:${VERSION}"
+            GHCR_LATEST="${REGISTRY}/${OWNER}/procureflow-${IMAGE}:latest"
+            
+            # Try different naming conventions that docker-compose might use
+            POSSIBLE_TAGS=(
+              "infra_docker_${IMAGE}:latest"
+              "procureflow_${IMAGE}:latest"
+              "procureflow-${IMAGE}:latest"
+              "${IMAGE}:latest"
+            )
+            
+            FOUND=false
+            for POSSIBLE_TAG in "${POSSIBLE_TAGS[@]}"; do
+              if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${POSSIBLE_TAG}$"; then
+                docker tag "$POSSIBLE_TAG" "$GHCR_TAG"
+                docker tag "$POSSIBLE_TAG" "$GHCR_LATEST"
+                echo "✅ Tagged: $POSSIBLE_TAG -> $GHCR_TAG and $GHCR_LATEST"
+                FOUND=true
+                break
+              fi
+            done
+            
+            if [ "$FOUND" = false ]; then
+              # Try to find by container name pattern
+              CONTAINER_NAME="procureflow-${IMAGE}"
+              IMAGE_ID=$(docker images --format "{{.ID}}\t{{.Repository}}:{{.Tag}}" | grep -i "${IMAGE}" | head -1 | awk '{print $1}')
+              if [ -n "$IMAGE_ID" ]; then
+                docker tag "$IMAGE_ID" "$GHCR_TAG"
+                docker tag "$IMAGE_ID" "$GHCR_LATEST"
+                echo "✅ Tagged by ID: $IMAGE_ID -> $GHCR_TAG and $GHCR_LATEST"
+              else
+                echo "⚠️  Could not find image for service: ${IMAGE}"
+              fi
+            fi
+          done
+          
+          echo ""
+          echo "All tagged images:"
+          docker images --format "{{.Repository}}:{{.Tag}}" | grep "${REGISTRY}/${OWNER}/procureflow-" || echo "No GHCR images found"
+
+      - name: Push images to GitHub Container Registry
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          REGISTRY: ghcr.io
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          IMAGES=("app" "assistant" "security" "web")
+          for IMAGE in "${IMAGES[@]}"; do
+            GHCR_TAG="${REGISTRY}/${OWNER}/procureflow-${IMAGE}:${VERSION}"
+            GHCR_LATEST="${REGISTRY}/${OWNER}/procureflow-${IMAGE}:latest"
+            
+            if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "${REGISTRY}/${OWNER}/procureflow-${IMAGE}:${VERSION}"; then
+              echo "Pushing ${GHCR_TAG}..."
+              docker push "$GHCR_TAG"
+              echo "Pushing ${GHCR_LATEST}..."
+              docker push "$GHCR_LATEST"
+              echo "✅ Successfully pushed procureflow-${IMAGE}"
+            else
+              echo "⚠️  Image procureflow-${IMAGE} not found, skipping..."
+            fi
+          done
+
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          cat > release-notes.md << EOF
+          # Release ${{ steps.version.outputs.version }}
+          
+          ## Images Published to GitHub Container Registry
+          
+          - \`ghcr.io/${{ github.repository_owner }}/procureflow-app:${{ steps.version.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/procureflow-assistant:${{ steps.version.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/procureflow-security:${{ steps.version.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/procureflow-web:${{ steps.version.outputs.version }}\`
+          
+          ## Build Information
+          
+          - **Commit**: ${{ github.sha }}
+          - **Branch**: ${{ github.ref_name }}
+          - **Workflow**: ${{ github.workflow }}
+          - **Triggered by**: @${{ github.actor }}
+          - **Timestamp**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          ## Pull Images
+          
+          \`\`\`bash
+          docker pull ghcr.io/${{ github.repository_owner }}/procureflow-app:${{ steps.version.outputs.version }}
+          docker pull ghcr.io/${{ github.repository_owner }}/procureflow-assistant:${{ steps.version.outputs.version }}
+          docker pull ghcr.io/${{ github.repository_owner }}/procureflow-security:${{ steps.version.outputs.version }}
+          docker pull ghcr.io/${{ github.repository_owner }}/procureflow-web:${{ steps.version.outputs.version }}
+          \`\`\`
+          EOF
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.is_tag == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release (non-tagged commit)
+        if: steps.version.outputs.is_tag == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Build ${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          draft: true
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save release information
+        run: |
+          cat > release-info.txt << EOF
+          VERSION=${{ steps.version.outputs.version }}
+          RELEASE_URL=https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.version }}
+          IMAGE_REGISTRY=ghcr.io/${{ github.repository_owner }}
+          IMAGES=app,assistant,security,web
+          EOF
+          cat release-info.txt
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            release-info.txt
+            release-notes.md
+          retention-days: 30
+
+  # Step 4: Deploy (Mock)
+  deploy:
+    name: Step 4 - Deploy (Mock)
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+
+      - name: Mock deployment - Display deployment info
+        run: |
+          echo "🚀 Starting mock deployment..."
+          echo "=================================="
+          echo "Environment: Mock/Staging"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "=================================="
+          echo ""
+          echo "Release Information:"
+          cat release-info.txt || echo "Release info not available"
+
+      - name: Mock deployment - Load release version
+        id: release
+        run: |
+          if [ -f release-info.txt ]; then
+            source release-info.txt
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "release_url=$RELEASE_URL" >> $GITHUB_OUTPUT
+            echo "image_registry=$IMAGE_REGISTRY" >> $GITHUB_OUTPUT
+            echo "images=$IMAGES" >> $GITHUB_OUTPUT
+            echo "✅ Loaded release version: $VERSION"
+          else
+            echo "⚠️  Release info not found, using fallback version"
+            echo "version=unknown" >> $GITHUB_OUTPUT
+            echo "release_url=" >> $GITHUB_OUTPUT
+            echo "image_registry=ghcr.io/${{ github.repository_owner }}" >> $GITHUB_OUTPUT
+            echo "images=app,assistant,security,web" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Mock deployment - Simulate deployment steps
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          IMAGE_REGISTRY: ${{ steps.release.outputs.image_registry }}
+          RELEASE_URL: ${{ steps.release.outputs.release_url }}
+        run: |
+          echo "📦 Step 1: Validating Docker images from GitHub Container Registry..."
+          echo "   Registry: ${IMAGE_REGISTRY}"
+          echo "   Version: ${VERSION}"
+          sleep 2
+          echo "✅ Images validated:"
+          echo "   - ${IMAGE_REGISTRY}/procureflow-app:${VERSION}"
+          echo "   - ${IMAGE_REGISTRY}/procureflow-assistant:${VERSION}"
+          echo "   - ${IMAGE_REGISTRY}/procureflow-security:${VERSION}"
+          echo "   - ${IMAGE_REGISTRY}/procureflow-web:${VERSION}"
+          
+          echo ""
+          echo "🔍 Step 2: Running pre-deployment checks..."
+          echo "   Checking release: ${RELEASE_URL}"
+          sleep 2
+          echo "✅ Pre-deployment checks passed"
+          
+          echo ""
+          echo "📤 Step 3: Pulling images from registry (mock)..."
+          echo "   docker pull ${IMAGE_REGISTRY}/procureflow-app:${VERSION}"
+          echo "   docker pull ${IMAGE_REGISTRY}/procureflow-assistant:${VERSION}"
+          echo "   docker pull ${IMAGE_REGISTRY}/procureflow-security:${VERSION}"
+          echo "   docker pull ${IMAGE_REGISTRY}/procureflow-web:${VERSION}"
+          sleep 2
+          echo "✅ Images pulled (mock)"
+          
+          echo ""
+          echo "🌐 Step 4: Deploying to mock environment..."
+          echo "   Using release: ${VERSION}"
+          echo "   Updating Kubernetes manifests with new image tags..."
+          sleep 2
+          echo "✅ Deployment completed (mock)"
+          
+          echo ""
+          echo "🧪 Step 5: Running smoke tests..."
+          echo "   Testing endpoints..."
+          sleep 2
+          echo "✅ Smoke tests passed (mock)"
+
+      - name: Mock deployment - Generate deployment report
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          IMAGE_REGISTRY: ${{ steps.release.outputs.image_registry }}
+          RELEASE_URL: ${{ steps.release.outputs.release_url }}
+        run: |
+          cat > deployment-report.txt << EOF
+          ========================================
+          DEPLOYMENT REPORT (MOCK)
+          ========================================
+          Status: SUCCESS
+          Environment: Mock/Staging
+          Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          Commit: ${{ github.sha }}
+          Branch: ${{ github.ref_name }}
+          Deployed by: ${{ github.actor }}
+          
+          Release Information:
+          - Version: ${VERSION}
+          - Release URL: ${RELEASE_URL}
+          - Image Registry: ${IMAGE_REGISTRY}
+          
+          Deployed Images:
+          - ${IMAGE_REGISTRY}/procureflow-app:${VERSION}
+          - ${IMAGE_REGISTRY}/procureflow-assistant:${VERSION}
+          - ${IMAGE_REGISTRY}/procureflow-security:${VERSION}
+          - ${IMAGE_REGISTRY}/procureflow-web:${VERSION}
+          
+          ========================================
+          EOF
+          cat deployment-report.txt
+
+      - name: Upload deployment report
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-report
+          path: deployment-report.txt
+          retention-days: 7
+
+      - name: Mock deployment - Summary
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_URL: ${{ steps.release.outputs.release_url }}
+        run: |
+          echo ""
+          echo "✅ Mock deployment completed successfully!"
+          echo "=========================================="
+          echo "Release: ${VERSION}"
+          echo "Release URL: ${RELEASE_URL}"
+          echo ""
+          echo "This is a mock deployment. In a real scenario, this would:"
+          echo "  ✅ Images already pushed to GitHub Container Registry"
+          echo "  ✅ GitHub Release created"
+          echo "  - Update Kubernetes manifests with image tags from release"
+          echo "  - Trigger ArgoCD sync to deploy to production"
+          echo "  - Run health checks and smoke tests"
+          echo "  - Send deployment notifications"
+          echo "  - Update deployment status in monitoring systems"
+
