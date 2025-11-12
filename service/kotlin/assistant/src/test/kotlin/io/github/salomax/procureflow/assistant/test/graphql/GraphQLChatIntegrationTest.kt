@@ -1,6 +1,8 @@
 package io.github.salomax.procureflow.assistant.test.graphql
 
+import io.github.salomax.procureflow.assistant.llm.LLMProvider
 import io.github.salomax.procureflow.assistant.test.AssistantIntegrationTest
+import io.github.salomax.procureflow.assistant.test.llm.MockLLMProvider
 import io.github.salomax.procureflow.common.test.assertions.assertNoErrors
 import io.github.salomax.procureflow.common.test.assertions.shouldBeJson
 import io.github.salomax.procureflow.common.test.assertions.shouldBeSuccessful
@@ -9,10 +11,31 @@ import io.github.salomax.procureflow.common.test.json.read
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.MediaType
 import io.micronaut.json.tree.JsonNode
+import jakarta.inject.Inject
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+/**
+ * Integration tests for GraphQL chat mutations and queries.
+ * 
+ * Note: These tests use a mocked LLM provider (MockLLMProvider) instead of making
+ * real API calls to Gemini. The mock provider is automatically injected via
+ * MockLLMProviderFactory which replaces GeminiProvider in the test context.
+ */
 class GraphQLChatIntegrationTest : AssistantIntegrationTest() {
+    
+    @Inject
+    private lateinit var llmProvider: LLMProvider
+    
+    private val mockProvider: MockLLMProvider?
+        get() = llmProvider as? MockLLMProvider
+    
+    @BeforeEach
+    override fun setUp() {
+        // Clear any custom responses from previous tests
+        mockProvider?.clearCustomResponses()
+    }
     
     private fun uniqueSessionId() = "test-session-${System.currentTimeMillis()}"
     
