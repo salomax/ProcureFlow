@@ -1,0 +1,86 @@
+directive @key(fields: String!) repeatable on OBJECT | INTERFACE
+
+type CatalogItem @key(fields: "id") {
+  id: ID!
+  name: String!
+  category: CatalogItemCategory!
+  priceCents: Int!
+  status: CatalogItemStatus!
+  description: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Query type with clean, focused operations
+type Query {
+  # Entity queries
+  searchCatalogItems(query: String!): [CatalogItem!]!
+  catalogItem(id: ID!): CatalogItem
+}
+
+# Mutation type with consistent patterns
+type Mutation {
+  # Catalog mutations
+  saveCatalogItem(input: CatalogItemInput!): CatalogItem!
+  # Checkout mutations
+  checkout(input: CheckoutInput!): CheckoutLog!
+}
+
+# Input types with inheritance patterns
+input BaseEntityInput {
+  name: String!
+}
+
+input CatalogItemInput {
+  name: String!
+  category: CatalogItemCategory!
+  priceCents: Int!
+  status: CatalogItemStatus!
+  description: String
+}
+
+enum CatalogItemCategory {
+  MATERIAL
+  SERVICE
+}
+
+enum CatalogItemStatus {
+  ACTIVE
+  PENDING_APPROVAL
+  INACTIVE
+}
+
+type CheckoutLog @key(fields: "id") {
+  id: ID!
+  userId: ID
+  items: [CheckoutItem!]!
+  totalPriceCents: Int!
+  itemCount: Int!
+  status: CheckoutStatus!
+  createdAt: String!
+}
+
+type CheckoutItem {
+  catalogItemId: ID!
+  name: String!
+  priceCents: Int!
+  quantity: Int!
+}
+
+enum CheckoutStatus {
+  COMPLETED
+  FAILED
+}
+
+input CheckoutInput {
+  items: [CheckoutItemInput!]!
+  totalPriceCents: Int!
+  itemCount: Int!
+}
+
+input CheckoutItemInput {
+  catalogItemId: ID!
+  name: String!
+  priceCents: Int!
+  quantity: Int!
+}

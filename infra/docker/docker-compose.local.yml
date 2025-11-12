@@ -1,0 +1,139 @@
+
+services:
+
+  # -------------------------------------------------------------
+  # Tooling Stack (database)
+  # -------------------------------------------------------------
+  postgres:
+    image: postgres:18rc1
+    container_name: procureflow-postgres
+    restart: unless-stopped
+    env_file: ../../.local.env
+    ports: ["5432:5432"]      
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - postgres-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: procureflow-pgbouncer
+    env_file: ../../.local.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    ports: ["6432:6432"]
+    volumes:
+      - ../pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ../pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    command: ["pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
+    networks:
+      - default
+      - postgres-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # -------------------------------------------------------------
+  # API Gateway Stack
+  # -------------------------------------------------------------
+
+  router:
+    image: ghcr.io/apollographql/router:v2.7.0
+    container_name: procureflow-graphql-router
+    ports:
+      - "4000:4000"
+      - "8088:8088"  # Health check port
+      - "9091:9090"  # Metrics port (changed to avoid conflict with Prometheus)
+    volumes:
+      - ../../contracts/graphql/supergraph/supergraph.local.graphql:/dist/supergraph.graphql:ro
+      - ../../infra/gateway/router/router.local.yaml:/dist/router.yaml:ro
+    command: ["--supergraph", "/dist/supergraph.graphql", "--config", "/dist/router.yaml"]
+    environment:
+      - APOLLO_ROUTER_LISTEN_ADDRESS=0.0.0.0:4000
+      - APOLLO_ROUTER_TELEMETRY_METRICS_PROMETHEUS_ENABLED=true
+      - APOLLO_ROUTER_TELEMETRY_METRICS_PROMETHEUS_LISTEN=0.0.0.0:9090
+      - APOLLO_ROUTER_TELEMETRY_METRICS_PROMETHEUS_PATH=/metrics
+
+  # -------------------------------------------------------------
+  # Observability Stack
+  # -------------------------------------------------------------
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: procureflow-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    volumes:
+      - ../observability/prometheus/prometheus.local.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: procureflow-grafana
+    env_file: ../../.local.env
+    ports:
+      - "3001:3000"
+    volumes:
+      - ../observability/grafana/provisioning:/etc/grafana/provisioning
+      - ../observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - loki
+
+  # PostgreSQL Exporter - monitors database metrics via pgbouncer
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: procureflow-postgres-exporter
+    env_file: ../../.local.env
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-procureflow}:${POSTGRES_PASSWORD:-procureflow}@pgbouncer:6432/${POSTGRES_DB:-procureflow_db}?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+
+  # Loki - Log aggregation system
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: procureflow-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ../observability/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    depends_on:
+      - prometheus
+
+  # Promtail - Log collection agent
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: procureflow-promtail
+    volumes:
+      - ../observability/promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+      
+volumes:
+  pgdata:
+  loki-data:
+
+networks:
+  postgres-internal:
+    driver: bridge
+    internal: false  # Set to true if you want complete isolation (no internet access)

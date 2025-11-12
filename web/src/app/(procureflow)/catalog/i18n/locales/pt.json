@@ -1,0 +1,43 @@
+{
+  "pageTitle": "Catálogo",
+  "pageSubtitle": "Busque por materiais e serviços, ou cadastre novos itens",
+  "searchPlaceholder": "Buscar itens do catálogo...",
+  "emptyStateMessage": "Digite um termo de busca para encontrar itens do catálogo",
+  "noResultsMessage": "Nenhum item encontrado para \"{{query}}\"",
+  "enrollNewItem": "Novo",
+  "searchError": "Falha ao buscar itens do catálogo. Tente novamente.",
+  "createdAt": "Criado em",
+  "category": {
+    "material": "Material",
+    "service": "Serviço"
+  },
+  "enrollForm": {
+    "title": "Cadastrar Novo Item no Catálogo",
+    "nameLabel": "Nome do Item",
+    "categoryLabel": "Categoria",
+    "priceLabel": "Preço (USD)",
+    "statusLabel": "Status",
+    "descriptionLabel": "Descrição",
+    "cancel": "Cancelar",
+    "submit": "Cadastrar Item",
+    "submitting": "Cadastrando..."
+  },
+  "status": {
+    "active": "Ativo",
+    "pendingApproval": "Aguardando Aprovação",
+    "inactive": "Inativo"
+  },
+  "validation": {
+    "nameRequired": "O nome do item é obrigatório",
+    "categoryRequired": "A categoria é obrigatória",
+    "priceRequired": "O preço deve ser maior que 0",
+    "statusRequired": "O status é obrigatório"
+  },
+  "toast": {
+    "itemEnrolled": "Item \"{{name}}\" cadastrado com sucesso",
+    "itemEnrollError": "Falha ao cadastrar item",
+    "itemAdded": "{{name}} adicionado ao carrinho"
+  },
+  "addToCart": "Adicionar ao Carrinho"
+}
+

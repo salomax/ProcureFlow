@@ -1,0 +1,43 @@
+{
+  "pageTitle": "Catalog",
+  "pageSubtitle": "Search for materials and services, or enroll new items",
+  "searchPlaceholder": "Search catalog items...",
+  "emptyStateMessage": "Enter a search term to find catalog items",
+  "noResultsMessage": "No items found for \"{{query}}\"",
+  "enrollNewItem": "New",
+  "searchError": "Failed to search catalog items. Please try again.",
+  "createdAt": "Created",
+  "category": {
+    "material": "Material",
+    "service": "Service"
+  },
+  "enrollForm": {
+    "title": "Catalog Item",
+    "nameLabel": "Item Name",
+    "categoryLabel": "Category",
+    "priceLabel": "Price (USD)",
+    "statusLabel": "Status",
+    "descriptionLabel": "Description",
+    "cancel": "Cancel",
+    "submit": "Save Item",
+    "submitting": "Saving..."
+  },
+  "status": {
+    "active": "Active",
+    "pendingApproval": "Pending Approval",
+    "inactive": "Inactive"
+  },
+  "validation": {
+    "nameRequired": "Item name is required",
+    "categoryRequired": "Category is required",
+    "priceRequired": "Price must be greater than 0",
+    "statusRequired": "Status is required"
+  },
+  "toast": {
+    "itemEnrolled": "Item \"{{name}}\" saved successfully",
+    "itemEnrollError": "Failed to save item",
+    "itemAdded": "{{name}} added to cart"
+  },
+  "addToCart": "Add to Cart"
+}
+

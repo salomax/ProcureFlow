@@ -1,0 +1,56 @@
+{
+  "cartIcon": {
+    "ariaLabel": "Shopping cart"
+  },
+  "drawer": {
+    "cartTitle": "Shopping Cart",
+    "checkoutTitle": "Checkout",
+    "confirmationTitle": "Order Confirmed"
+  },
+  "emptyCart": {
+    "message": "Your cart is empty",
+    "submessage": "Add items from the catalog to get started"
+  },
+  "item": {
+    "name": "Name",
+    "price": "Price",
+    "quantity": "Quantity",
+    "subtotal": "Subtotal",
+    "remove": "Remove"
+  },
+  "summary": {
+    "itemCount": "{{count}} item",
+    "itemCount_plural": "{{count}} items",
+    "subtotal": "Subtotal",
+    "total": "Total"
+  },
+  "actions": {
+    "proceedToCheckout": "Proceed to Checkout",
+    "backToCart": "Back to Cart",
+    "confirmCheckout": "Confirm Checkout",
+    "continueShopping": "Continue Shopping",
+    "clearCart": "Clear Cart"
+  },
+  "checkout": {
+    "reviewItems": "Review your items",
+    "orderSummary": "Order Summary"
+  },
+  "confirmation": {
+    "success": "Order placed successfully!",
+    "message": "Thank you for your order. Your items have been processed.",
+    "orderId": "Order ID",
+    "timestamp": "Order placed at"
+  },
+  "errors": {
+    "emptyCart": "Your cart is empty. Please add items before checkout.",
+    "checkoutFailed": "Checkout failed. Please try again."
+  },
+  "toast": {
+    "itemAdded": "{{name}} added to cart",
+    "itemQuantityIncreased": "Quantity increased for {{name}}",
+    "itemRemoved": "{{name}} removed from cart",
+    "cartCleared": "Cart cleared",
+    "checkoutSuccess": "Checkout completed successfully"
+  }
+}
+

@@ -1,0 +1,86 @@
+import * as Types from '../../types/__generated__/graphql';
+
+import { gql } from '@apollo/client';
+import * as ApolloReactCommon from '@apollo/client/react';
+import * as ApolloReactHooks from '@apollo/client/react';
+const defaultOptions = {} as const;
+export type ChatMutationVariables = Types.Exact<{
+  input: Types.ChatInput;
+}>;
+
+
+export type ChatMutation = { chat: { __typename: 'ChatResponse', sessionId: string, response: string } };
+
+export type ClearConversationMutationVariables = Types.Exact<{
+  sessionId: Types.Scalars['String']['input'];
+}>;
+
+
+export type ClearConversationMutation = { clearConversation: boolean };
+
+
+export const ChatDocument = gql`
+    mutation Chat($input: ChatInput!) {
+  chat(input: $input) {
+    sessionId
+    response
+  }
+}
+    `;
+export type ChatMutationFn = ApolloReactCommon.MutationFunction<ChatMutation, ChatMutationVariables>;
+
+/**
+ * __useChatMutation__
+ *
+ * To run a mutation, you first call `useChatMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useChatMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [chatMutation, { data, loading, error }] = useChatMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useChatMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ChatMutation, ChatMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ChatMutation, ChatMutationVariables>(ChatDocument, options);
+      }
+export type ChatMutationHookResult = ReturnType<typeof useChatMutation>;
+export type ChatMutationResult = ApolloReactCommon.MutationResult<ChatMutation>;
+export type ChatMutationOptions = ApolloReactCommon.BaseMutationOptions<ChatMutation, ChatMutationVariables>;
+export const ClearConversationDocument = gql`
+    mutation ClearConversation($sessionId: String!) {
+  clearConversation(sessionId: $sessionId)
+}
+    `;
+export type ClearConversationMutationFn = ApolloReactCommon.MutationFunction<ClearConversationMutation, ClearConversationMutationVariables>;
+
+/**
+ * __useClearConversationMutation__
+ *
+ * To run a mutation, you first call `useClearConversationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useClearConversationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [clearConversationMutation, { data, loading, error }] = useClearConversationMutation({
+ *   variables: {
+ *      sessionId: // value for 'sessionId'
+ *   },
+ * });
+ */
+export function useClearConversationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ClearConversationMutation, ClearConversationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ClearConversationMutation, ClearConversationMutationVariables>(ClearConversationDocument, options);
+      }
+export type ClearConversationMutationHookResult = ReturnType<typeof useClearConversationMutation>;
+export type ClearConversationMutationResult = ApolloReactCommon.MutationResult<ClearConversationMutation>;
+export type ClearConversationMutationOptions = ApolloReactCommon.BaseMutationOptions<ClearConversationMutation, ClearConversationMutationVariables>;

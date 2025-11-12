@@ -1,0 +1,56 @@
+{
+  "cartIcon": {
+    "ariaLabel": "Carrinho de compras"
+  },
+  "drawer": {
+    "cartTitle": "Carrinho de Compras",
+    "checkoutTitle": "Finalizar Compra",
+    "confirmationTitle": "Pedido Confirmado"
+  },
+  "emptyCart": {
+    "message": "Seu carrinho está vazio",
+    "submessage": "Adicione itens do catálogo para começar"
+  },
+  "item": {
+    "name": "Nome",
+    "price": "Preço",
+    "quantity": "Quantidade",
+    "subtotal": "Subtotal",
+    "remove": "Remover"
+  },
+  "summary": {
+    "itemCount": "{{count}} item",
+    "itemCount_plural": "{{count}} itens",
+    "subtotal": "Subtotal",
+    "total": "Total"
+  },
+  "actions": {
+    "proceedToCheckout": "Finalizar Compra",
+    "backToCart": "Voltar ao Carrinho",
+    "confirmCheckout": "Confirmar Compra",
+    "continueShopping": "Continuar Comprando",
+    "clearCart": "Limpar Carrinho"
+  },
+  "checkout": {
+    "reviewItems": "Revise seus itens",
+    "orderSummary": "Resumo do Pedido"
+  },
+  "confirmation": {
+    "success": "Pedido realizado com sucesso!",
+    "message": "Obrigado pelo seu pedido. Seus itens foram processados.",
+    "orderId": "ID do Pedido",
+    "timestamp": "Pedido realizado em"
+  },
+  "errors": {
+    "emptyCart": "Seu carrinho está vazio. Por favor, adicione itens antes de finalizar a compra.",
+    "checkoutFailed": "Falha ao finalizar compra. Por favor, tente novamente."
+  },
+  "toast": {
+    "itemAdded": "{{name}} adicionado ao carrinho",
+    "itemQuantityIncreased": "Quantidade aumentada para {{name}}",
+    "itemRemoved": "{{name}} removido do carrinho",
+    "cartCleared": "Carrinho limpo",
+    "checkoutSuccess": "Compra finalizada com sucesso"
+  }
+}
+

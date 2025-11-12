@@ -1,0 +1,14 @@
+{
+  "displayName": "ProcureFlow",
+  "packageName": "procureflow",
+  "packageNamespace": "io.github.salomax.procureflow",
+  "databaseName": "procureflow_db",
+  "databaseUser": "procureflow",
+  "serviceName": "procureflow-service",
+  "webPackageName": "procureflow-web",
+  "dockerImagePrefix": "procureflow",
+  "routeGroup": "procureflow",
+  "gitRepo": "salomax/procureflow",
+  "apiDomain": "api.procureflow.com",
+  "logoName": "procureflow-logo"
+}

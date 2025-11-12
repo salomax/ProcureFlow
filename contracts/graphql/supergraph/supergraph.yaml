@@ -1,0 +1,15 @@
+federation_version: 2
+subgraphs:
+  app:
+    routing_url: http://app:8080/graphql
+    schema:
+      file: ../subgraphs/app/schema.graphqls
+  security:
+    routing_url: http://security:8080/graphql
+    schema:
+      file: ../subgraphs/security/schema.graphqls
+  assistant:
+    routing_url: http://assistant:8080/graphql
+    schema:
+      file: ../subgraphs/assistant/schema.graphqls
+
