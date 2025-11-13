@@ -45,12 +45,14 @@ jobs:
             sed "s/'//" | \
             sed "s/^://" | \
             grep -v "^$" | \
-            sort | \
-            tr '\n' ',' | \
-            sed 's/,$//')
+            sort)
           
-          # Convert to JSON array format
-          SERVICES_JSON=$(echo "[$(echo $SERVICES | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')]")
+          # Convert to JSON array format using jq or Python
+          if command -v jq &> /dev/null; then
+            SERVICES_JSON=$(echo "$SERVICES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          else
+            SERVICES_JSON=$(echo "$SERVICES" | python3 -c "import sys, json; print(json.dumps([line.strip() for line in sys.stdin if line.strip()]))")
+          fi
           
           echo "services=$SERVICES_JSON" >> $GITHUB_OUTPUT
           echo "Discovered services: $SERVICES_JSON"
