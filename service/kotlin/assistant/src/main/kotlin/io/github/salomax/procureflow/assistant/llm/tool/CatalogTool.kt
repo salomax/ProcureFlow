@@ -7,11 +7,51 @@ import io.github.salomax.procureflow.assistant.llm.FunctionParameters
 import io.github.salomax.procureflow.assistant.llm.PropertyDefinition
 import jakarta.inject.Singleton
 import kotlinx.coroutines.runBlocking
+import java.text.NumberFormat
+import java.util.Locale
 
 @Singleton
 class CatalogTool(
     private val graphQLClient: GraphQLClient
 ) : Tool {
+    
+    private val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
+    
+    /**
+     * Formats price in cents to currency string (e.g., 1500 -> "$15.00")
+     */
+    private fun formatPrice(priceCents: Any?): String {
+        val cents = when (priceCents) {
+            is Number -> priceCents.toInt()
+            is String -> priceCents.toIntOrNull() ?: 0
+            else -> 0
+        }
+        return currencyFormatter.format(cents / 100.0)
+    }
+    
+    /**
+     * Transforms catalog item data by converting priceCents to formatted price string
+     */
+    private fun transformCatalogItem(item: Any?): Any? {
+        if (item !is Map<*, *>) return item
+        
+        val mutableMap = item.toMutableMap()
+        val priceCents = mutableMap["priceCents"]
+        // Always add price field - format null as $0.00
+        mutableMap["price"] = formatPrice(priceCents)
+        // Keep priceCents for backward compatibility but add formatted price
+        return mutableMap
+    }
+    
+    /**
+     * Transforms a list of catalog items
+     */
+    private fun transformCatalogItems(items: Any?): Any? {
+        return when (items) {
+            is List<*> -> items.map { transformCatalogItem(it) }
+            else -> transformCatalogItem(items)
+        }
+    }
     
     fun getSearchFunction(): FunctionDefinition {
         return FunctionDefinition(
@@ -112,7 +152,9 @@ class CatalogTool(
                             val errorMessages = response.errors!!.joinToString(", ") { it["message"]?.toString() ?: "Unknown error" }
                             return@runBlocking ToolResult(false, error = errorMessages)
                         }
-                        ToolResult(true, data = response.data?.get("searchCatalogItems"))
+                        val rawData = response.data?.get("searchCatalogItems")
+                        val transformedData = transformCatalogItems(rawData)
+                        ToolResult(true, data = transformedData)
                     }
                     
                     "catalogItem" -> {
@@ -144,7 +186,9 @@ class CatalogTool(
                             val errorMessages = response.errors!!.joinToString(", ") { it["message"]?.toString() ?: "Unknown error" }
                             return@runBlocking ToolResult(false, error = errorMessages)
                         }
-                        ToolResult(true, data = response.data?.get("catalogItem"))
+                        val rawData = response.data?.get("catalogItem")
+                        val transformedData = transformCatalogItem(rawData)
+                        ToolResult(true, data = transformedData)
                     }
                     
                     "saveCatalogItem" -> {
@@ -191,7 +235,9 @@ class CatalogTool(
                             val errorMessages = response.errors!!.joinToString(", ") { it["message"]?.toString() ?: "Unknown error" }
                             return@runBlocking ToolResult(false, error = errorMessages)
                         }
-                        ToolResult(true, data = response.data?.get("saveCatalogItem"))
+                        val rawData = response.data?.get("saveCatalogItem")
+                        val transformedData = transformCatalogItem(rawData)
+                        ToolResult(true, data = transformedData)
                     }
                     
                     else -> ToolResult(false, error = "Unknown function: $functionName")

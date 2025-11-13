@@ -76,13 +76,9 @@ The services will be avaliable at:
 
 ## How to test
 
-### Managing Catalog Items
+### Catalog Items & Checkout
 
-
-
-### Checkout Catalog Items
-
-
+[![](https://www.canva.com/design/DAG4lfqqLSc/ltpcLJkuxuifiQEjuOiT0Q/watch)](https://www.canva.com/design/DAG4lfqqLSc/ltpcLJkuxuifiQEjuOiT0Q/watch)
 
 ### AI Chat
 
@@ -90,9 +86,7 @@ The services will be avaliable at:
 
 ### API
 
-
 The federated GrapqhQL router is exposed at `http://localhost:4000/graphql`.
-
 
 ### Search Catalog Items
 
@@ -173,12 +167,18 @@ Neotool UI layer includes a comprehensive design system with Material-UI compone
 
 As IDE with AI-code editor we've been testing with Cursor. But it might be applied to similar ones.
 
-
 ### Neotool Spec-Driven Development
 
 [Neotool](https://github.com/salomax/neotool) uses Spec-Driven Development, meaning the spec in the [spec/](spec/) folder is the single source of truth for all architecture and patterns. Unlike typical development where knowledge is scattered, Neotool's spec is highly structured and optimized for AI. It uses metadata and tags to make sure AI assistants like Cursor can easily understand the project's context and instantly follow established architectural rules.
 
 The main benefit is speed and consistency. Developers just describe a feature naturally, and the AI generates production-ready code that already complies with complex patterns like GraphQL Federation and Clean Architecture. This cuts down implementation time significantly, eliminates manual guesswork, and keeps the entire codebase consistently following the same high-quality standards.
+
+```mermaid
+flowchart LR
+    Step1[Step 1: Generate Feature File] --> Step2[Step 2: Generate Implementation Prompt]
+    Step2 --> Step3[Step 3: Plan and Build]
+    Step3 --> Step4[Step 4: Manual Review & Test]
+```
 
 #### Step 1 - Generate Feature File
 
@@ -231,7 +231,6 @@ Using Plan mode, implement the feature according to docs/features/user/implement
 After Cursor generates all the artifacts using Plan mode, this step involves manually reviewing the generated code and running tests to validate the implementation. 
 
 This is a critical quality assurance step that ensures the generated code meets requirements, follows best practices, and integrates correctly with the existing codebase.
-
 
 # Use Cases
 
