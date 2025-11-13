@@ -32,7 +32,7 @@ jobs:
       matrix:
         service: [app, assistant, security, common]
       fail-fast: false
-    uses: ./reusable/backend-tests.yml
+    uses: ./.github/workflows/reusable/backend-tests.yml
     with:
       service: ${{ matrix.service }}
 
@@ -41,14 +41,14 @@ jobs:
   # ============================================
   frontend-tests:
     name: Frontend Tests
-    uses: ./reusable/frontend-tests.yml
+    uses: ./.github/workflows/reusable/frontend-tests.yml
 
   # ============================================
   # Security Scan
   # ============================================
   security-scan:
     name: Security Scan
-    uses: ./reusable/security-scan.yml
+    uses: ./.github/workflows/reusable/security-scan.yml
 
   # ============================================
   # Build for Production
@@ -56,7 +56,7 @@ jobs:
   build:
     name: Build for Production
     needs: [backend-tests, frontend-tests, security-scan]
-    uses: ./reusable/build.yml
+    uses: ./.github/workflows/reusable/build.yml
     with:
       image_tag: ${{ github.event.inputs.version || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || github.sha }}
     secrets: inherit
