@@ -24,19 +24,38 @@ env:
 
 jobs:
   # ============================================
-  # Run CI checks before production deployment
+  # Backend Tests (Matrix)
   # ============================================
-  ci-checks:
-    name: CI Checks
-    uses: ./.github/workflows/ci.yml
-    secrets: inherit
+  backend-tests:
+    name: Backend Tests (${{ matrix.service }})
+    strategy:
+      matrix:
+        service: [app, assistant, security, common]
+      fail-fast: false
+    uses: ./reusable/backend-tests.yml
+    with:
+      service: ${{ matrix.service }}
+
+  # ============================================
+  # Frontend Tests
+  # ============================================
+  frontend-tests:
+    name: Frontend Tests
+    uses: ./reusable/frontend-tests.yml
+
+  # ============================================
+  # Security Scan
+  # ============================================
+  security-scan:
+    name: Security Scan
+    uses: ./reusable/security-scan.yml
 
   # ============================================
   # Build for Production
   # ============================================
   build:
     name: Build for Production
-    needs: [ci-checks]
+    needs: [backend-tests, frontend-tests, security-scan]
     uses: ./reusable/build.yml
     with:
       image_tag: ${{ github.event.inputs.version || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || github.sha }}
