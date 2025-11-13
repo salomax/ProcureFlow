@@ -132,6 +132,9 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -145,11 +148,11 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
+      # - name: Upload Trivy results to GitHub Security
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   if: always()
+      #   with:
+      #     sarif_file: 'trivy-results.sarif'
 
       - name: Mock security scan summary
         run: |
@@ -276,8 +279,7 @@ jobs:
           echo "   URL: https://preview-pr-${{ github.event.pull_request.number }}.example.com"
           echo "   Environment: preview-pr-${{ github.event.pull_request.number }}"
           echo ""
-          echo "⏱️  Simulating deployment (30s)..."
-          sleep 30
+          echo "⏱️  Simulating deployment..."
           echo "✅ Preview app deployed successfully"
           echo "🔍 Preview app is ready for validation"
 
@@ -331,8 +333,7 @@ jobs:
           echo "   Environment: staging"
           echo "   URL: https://staging.example.com"
           echo ""
-          echo "⏱️  Simulating deployment (45s)..."
-          sleep 45
+          echo "⏱️  Simulating deployment..."
           echo "✅ Staging deployment completed"
           
       - name: Save staging deployment info
@@ -439,7 +440,6 @@ jobs:
           echo "   5. If healthy, complete rollout to 100%"
           echo ""
           echo "⏱️  Simulating canary deployment..."
-          sleep 60
           echo "✅ Canary deployment completed"
 
       - name: Post-Release Health Checks
@@ -515,8 +515,7 @@ jobs:
           echo "⚠️  Production deployment unhealthy - Initiating rollback"
           echo "📦 Rolling back to previous image digest"
           echo "🏷️  Version being rolled back: ${{ steps.tag.outputs.version }}"
-          echo "⏱️  Simulating rollback (30s)..."
-          sleep 30
+          echo "⏱️  Simulating rollback..."
           echo "✅ Rollback completed"
           echo "🔗 Production URL: https://prod.example.com (previous version)"
 
