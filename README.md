@@ -2,7 +2,160 @@
 
 A comprehensive solution demonstrating how AI agents make workflows way better.
 
-# How to 
+## How to run ProcedureFlow
+
+After clone the project and ensure you have docker engine, docker-compose cmd available locally:
+
+```bash
+git clone https://github.com/salomax/ProcureFlow.git
+docker -v
+docker-compose -v
+```
+
+Create `.env` and `.local.env` on root project folder like this:
+
+```plaintext
+# --- Global ---
+APP_NAME=procureflow
+APP_LOCALE=en-US
+GRAPHQL_ENDPOINT: http://router:4000/graphql
+
+# --- Database ---
+POSTGRES_USER=procureflow
+POSTGRES_PASSWORD=procureflow
+POSTGRES_DB=procureflow_db
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+DATABASE_URL=jdbc:postgresql://postgres:5432/procureflow_db
+
+# --- Grafana ---
+GF_SECURITY_ADMIN_USER=admin
+GF_SECURITY_ADMIN_PASSWORD=admin
+
+# --- AI ---
+GEMINI_API_KEY=<add your Gemini API Key here>
+```
+
+On project folder, the the docker-compose command:
+
+```bash
+docker-compose -f infra/docker/docker-compose.yml up -d
+```
+It's going to take a while but if everything goes as expected, you can check the output like:
+
+```bash
+ ✔ app                                      Built
+ ✔ assistant                                Built
+ ✔ security                                 Built
+ ✔ web                                      Built
+ ✔ Network docker_postgres-internal         Created
+ ✔ Network docker_default                   Created
+ ✔ Volume "docker_loki-data"                Created
+ ✔ Volume "docker_pgdata"                   Created
+ ✔ Container procureflow-postgres           Healthy
+ ✔ Container procureflow-graphql-router     Started
+ ✔ Container procureflow-web                Started
+ ✔ Container procureflow-prometheus         Started
+ ✔ Container procureflow-pgbouncer          Healthy
+ ✔ Container procureflow-loki               Started
+ ✔ Container procureflow-promtail           Started
+ ✔ Container procureflow-grafana            Started
+ ✔ Container procureflow-app                Started
+ ✔ Container procureflow-postgres-exporter  Started
+ ✔ Container procureflow-security           Started
+ ✔ Container procureflow-assistant          Started
+```
+
+The services will be avaliable at:
+
+- **Web Interface** http://localhost:3000
+- **GrapqhQL API** http://localhost:4000/graphql
+- **Postgres(Pgbouncer)** postgresql://procureflow:procureflow@localhost:6432/procureflow_db
+- **Grafana** http://localhost:3001
+- **Prometheus** http://localhost:9090
+
+## How to test
+
+### Managing Catalog Items
+
+
+
+### Checkout Catalog Items
+
+
+
+### AI Chat
+
+
+
+### API
+
+
+The federated GrapqhQL router is exposed at `http://localhost:4000/graphql`.
+
+
+### Search Catalog Items
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { searchCatalogItems(query: \"laptop\") { id name category priceCents status description } }"
+  }'
+```
+
+### Get Catalog Item by ID
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { catalogItem(id: \"item-id\") { id name category priceCents status description createdAt updatedAt } }"
+  }'
+```
+
+### Create/Update Catalog Item
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { saveCatalogItem(input: { name: \"Laptop Pro\" category: MATERIAL priceCents: 129999 status: ACTIVE description: \"High-performance laptop\" }) { id name category priceCents status } }"
+  }'
+```
+
+### Send Chat Message
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { chat(input: { sessionId: \"session-123\" message: \"What laptops are available?\" }) { sessionId response } }"
+  }'
+```
+
+### Get Conversation
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { conversation(sessionId: \"session-123\") { sessionId messageCount lastMessage } }"
+  }'
+```
+
+### Clear Conversation
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { clearConversation(sessionId: \"session-123\") }"
+  }'
+```
+
+
+## Observability
 
 
 
@@ -10,7 +163,7 @@ A comprehensive solution demonstrating how AI agents make workflows way better.
 
 The project is broken down into clean layers: the client layer (Next.js web app) talks to the API gateway layer (Apollo Router doing GraphQL Federation), which routes requests to the service layer (Kotlin/Micronaut microservices with resolvers, business logic, and data access), and everything eventually hits the data layer (PostgreSQL). Each layer has a clear job and they're all containerized so you can scale and deploy them independently.
 
-![Architecture Diagram](docs/etc/images/image.png)
+![Architecture Diagram](etc/images/image.png)
 
 ## Neotool
 
@@ -23,7 +176,7 @@ As IDE with AI-code editor we've been testing with Cursor. But it might be appli
 
 ### Neotool Spec-Driven Development
 
-[Neotool](https://github.com/salomax/neotool) uses Spec-Driven Development, meaning the spec in the spec/ folder is the single source of truth for all architecture and patterns. Unlike typical development where knowledge is scattered, Neotool's spec is highly structured and optimized for AI. It uses metadata and tags to make sure AI assistants like Cursor can easily understand the project's context and instantly follow established architectural rules.
+[Neotool](https://github.com/salomax/neotool) uses Spec-Driven Development, meaning the spec in the [spec/](spec/) folder is the single source of truth for all architecture and patterns. Unlike typical development where knowledge is scattered, Neotool's spec is highly structured and optimized for AI. It uses metadata and tags to make sure AI assistants like Cursor can easily understand the project's context and instantly follow established architectural rules.
 
 The main benefit is speed and consistency. Developers just describe a feature naturally, and the AI generates production-ready code that already complies with complex patterns like GraphQL Federation and Clean Architecture. This cuts down implementation time significantly, eliminates manual guesswork, and keeps the entire codebase consistently following the same high-quality standards.
 
@@ -112,7 +265,6 @@ If not found, they can register a new item (name, category, description, price, 
 
 This step had as output 2 documents:
 - [implementation-prompt.md](docs/features/catalog/implementation-prompt.md) (rules for implementation)
-- [QUICK_START.md](docs/features/catalog/QUICK_START.md) (sort of guideline for Cursor)
 
 ## Step 3 - Plan and build the feature
 
