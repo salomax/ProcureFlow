@@ -303,16 +303,13 @@ Goal: Provide a sleek, AI-driven experience that lets purchasing teams work way 
 
 ## Features
 
-Feature 1: Search and Enroll
+- Feature 1: Search and Enroll
+- Feature 2: Cart and Checkout
+- Feature 3: Search and Enroll by natural language
 
-Feature 2: Cart and Checkout
+## Implementing the Solution with Spec-Driven Development (Feature 1: Search and Enroll)
 
-Feature 3: Search and Enroll by natural language
-
-
-# Implementing the Solution with Spec-Driven Development
-
-## Step 1 - Create feature files
+### Step 1 - Create feature files
 
 Initially, it's been created the [search-and-enroll.feature](docs/features/catalog/search-and-enroll.feature) file, transcribing the text below into the Gherkin format:
 
@@ -321,20 +318,20 @@ Search & Register
 Users can search for a material/service in a catalog by name or keyword.
 If not found, they can register a new item (name, category, description, price, status
 ```
-## Step 2 - Create the prompt to cursor
+### Step 2 - Create the prompt to cursor
 
 - Request to Cursor to provide the prompts to implement [search-and-enroll.feature](docs/features/catalog/search-and-enroll.feature) according to [Neotool specs](spec/)
 
 This step had an output document:
 - [implementation-prompt.md](docs/features/catalog/implementation-prompt.md) (rules for implementation)
 
-## Step 3 - Plan and build the feature
+### Step 3 - Plan and build the feature
 
 Request via prompt to Cursor to build the feature according to the files generated above.
 
 Cursor had generated the following plan to build the solution.
 
-## Step 4 - Manual review and tests (backend)
+### Step 4 - Manual review and tests (backend)
 
 According to the Neotool specs, Cursor was able to generate the artifacts to implement the feature.
 
@@ -373,7 +370,7 @@ curl --request POST \
 
 GraphQL API is okay!
 
-## Step 5 - Manual review and tests (frontend)
+### Step 5 - Manual review and tests (frontend)
 
 Build the modules (using Node >=20)
 
@@ -390,6 +387,27 @@ pnpm run dev
 Accessing http://localhost:3000/catalog, it was possible to validate the whole implementation.
 
 The same principle was followed for the other requirements.
+
+### AI Chat
+
+The assistant service is chat interface for catalog operations, using LLM with function calling to translate natural language requests into GraphQL operations against the federated endpoint.
+
+- **Assistant Resolver** receives chat mutation requests via GraphQL endpoint
+- **Conversation Service** retrieves or creates conversation context for the session
+- **Assistant Agent** orchestrates the message processing workflow
+- **LLM Provider** receives the message with conversation history and available function definitions
+- **LLM** analyzes the request and decides which functions to call (if any)
+- **Tool Registry** provides function definitions and routes function calls to appropriate tools
+- **Catalog Tool** executes catalog operations (searchCatalogItems, catalogItem, saveCatalogItem) via GraphQL client
+- **Checkout Tool** executes checkout operations via GraphQL client
+- **GraphQL Client** sends queries/mutations to the federated GraphQL endpoint (Apollo Router)
+- **Apollo Router** routes requests to the appropriate subgraph service (App Service)
+- **App Service** processes catalog and checkout operations against PostgreSQL database
+- **Tool Results** are returned to the LLM with structured data
+- **LLM** generates a natural language response based on tool results and conversation context
+- **Assistant Agent** returns the final response to the resolver
+- **Conversation Service** persists the updated conversation context for future interactions
+
 
 # CI/CD
 
