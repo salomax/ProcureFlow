@@ -22,14 +22,53 @@ env:
 
 jobs:
   # ============================================
+  # Discover services dynamically
+  # ============================================
+  discover-services:
+    name: Discover Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.set-services.outputs.services }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: wrapper
+
+      - name: Discover services from Gradle
+        id: set-services
+        working-directory: ./service/kotlin
+        run: |
+          # Get list of subprojects from Gradle, filter out root project, extract service names
+          SERVICES=$(./gradlew projects --console=plain 2>/dev/null | \
+            grep -E "Project ':[^']+'" | \
+            sed "s/Project '://" | \
+            sed "s/'//" | \
+            sed "s/^://" | \
+            grep -v "^$" | \
+            sort | \
+            tr '\n' ',' | \
+            sed 's/,$//')
+          
+          # Convert to JSON array format
+          SERVICES_JSON=$(echo "[$(echo $SERVICES | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')]")
+          
+          echo "services=$SERVICES_JSON" >> $GITHUB_OUTPUT
+          echo "Discovered services: $SERVICES_JSON"
+
+  # ============================================
   # PR CI: Quality Checks & Security Scan
   # ============================================
   backend-tests:
     name: Backend Tests (${{ matrix.service }})
     runs-on: ubuntu-latest
+    needs: discover-services
     strategy:
       matrix:
-        service: [app, assistant, security, common]
+        service: ${{ fromJson(needs.discover-services.outputs.services) }}
       fail-fast: false
     services:
       docker:
