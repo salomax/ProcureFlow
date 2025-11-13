@@ -78,11 +78,11 @@ The services will be avaliable at:
 
 ### Catalog Items & Checkout
 
-[![](https://www.canva.com/design/DAG4lfqqLSc/ltpcLJkuxuifiQEjuOiT0Q/watch)](https://www.canva.com/design/DAG4lfqqLSc/ltpcLJkuxuifiQEjuOiT0Q/watch)
+![Catalog Items & Checkout Test](etc/images/catalog_checkout_test.gif)
 
 ### AI Chat
 
-
+![AI Chat](etc/images/ai_chat.gif)
 
 ### API
 
@@ -151,13 +151,76 @@ curl -X POST http://localhost:4000/graphql \
 
 ## Observability
 
+### Collecting Data
 
+Micrometer collects metrics from Kotlin/Micronaut services (HTTP, GraphQL, database, JVM), Prometheus scrapes and stores them.
+
+structured logs are collected by Promtail and sent to Loki, and Grafana visualizes both metrics and logs via pre-configured dashboards.
+
+```mermaid
+graph TB
+    subgraph "Backend Layer"
+        Service[Service<br/>Micrometer Metrics]
+        Router[GraphQL Router<br/>Built-in Metrics]
+        Postgres[(PostgreSQL<br/>Database)]
+    end
+
+    subgraph "Metrics Collection"
+        Prometheus[Prometheus<br/>Metrics Storage]
+        PostgresExporter[Postgres Exporter<br/>DB Metrics]
+    end
+
+    subgraph "Logging Collection"
+        Promtail[Promtail<br/>Log Collector]
+        Loki[Loki<br/>Log Storage]
+    end
+
+    subgraph "Visualization"
+        Grafana[Grafana<br/>Dashboards & Visualization]
+    end
+
+    Service -->|"/prometheus endpoint"| Prometheus
+    Router -->|"/metrics endpoint"| Prometheus
+    Postgres --> PostgresExporter
+    PostgresExporter -->|"DB metrics"| Prometheus
+
+    Service -->|"Structured Logs"| Promtail
+    Router -->|"Structured Logs"| Promtail
+    Postgres -->|"Structured Logs"| Promtail
+    Promtail --> Loki
+
+    Prometheus -->|"Metrics Queries"| Grafana
+    Loki -->|"Log Queries"| Grafana
+
+    style Service fill:#e1f5ff
+    style Router fill:#e1f5ff
+    style Postgres fill:#fff4e1
+    style Prometheus fill:#ffe1f5
+    style Loki fill:#ffe1f5
+    style Grafana fill:#e1ffe1
+    style Promtail fill:#f0e1ff
+    style PostgresExporter fill:#f0e1ff
+```
+
+### Grafana Dashboards
+
+Just as example, it's been added 2 Dashboards: Catalog Metrics and PostgreSQL Metrics
+
+- Go to [http://localhost:3001](http://localhost:3001)
+- Go to ProcureFlow folder
+- Browse for Catalog Metrics and PostgreSQL Database Metrics
+
+![](etc/images/o11y_postgres.png)
+
+![](etc/images/o11y_service.png)
+
+⚠️ The logs have not been implemented but that has kept in the solution in order to demonstrate the concept
 
 # Architecture
 
 The project is broken down into clean layers: the client layer (Next.js web app) talks to the API gateway layer (Apollo Router doing GraphQL Federation), which routes requests to the service layer (Kotlin/Micronaut microservices with resolvers, business logic, and data access), and everything eventually hits the data layer (PostgreSQL). Each layer has a clear job and they're all containerized so you can scale and deploy them independently.
 
-![Architecture Diagram](etc/images/image.png)
+![Architecture Diagram](etc/images/architecture.png)
 
 ## Neotool
 
@@ -247,7 +310,7 @@ Feature 2: Cart and Checkout
 Feature 3: Search and Enroll by natural language
 
 
-# Implementation
+# Implementing the Solution with Spec-Driven Development
 
 ## Step 1 - Create feature files
 
@@ -262,12 +325,12 @@ If not found, they can register a new item (name, category, description, price, 
 
 - Request to Cursor to provide the prompts to implement [search-and-enroll.feature](docs/features/catalog/search-and-enroll.feature) according to [Neotool specs](spec/)
 
-This step had as output 2 documents:
+This step had an output document:
 - [implementation-prompt.md](docs/features/catalog/implementation-prompt.md) (rules for implementation)
 
 ## Step 3 - Plan and build the feature
 
-Request via prompt to Cursor to build the feature according to the files generated above (rules and guideline).
+Request via prompt to Cursor to build the feature according to the files generated above.
 
 Cursor had generated the following plan to build the solution.
 
@@ -283,12 +346,7 @@ docker-compose -f infra/docker/docker-compose.local.yml up -d postgres pgbouncer
 
 As expected, the database was available via port 6432, username and password as procureflow, and database procureflow_db.
 
-During the review, some artifacts had been adjusted:
-- Service integration tests
-- GraphQL instrumentation components
-- Supergraph with wrong address for local
-
-After the fixes have been applied to code, we could started the router:
+After fix some tweaks we could run the router:
 
 ```shell
 docker-compose -f infra/docker/docker-compose.local.yml up -d router
@@ -300,7 +358,7 @@ Search catalog test:
 curl --request POST \
   --url http://localhost:4000/graphql \
   --header 'content-type: application/json' \
-  --data '{"query":"query SearchCatalogItems($query: String!) { searchCatalogItems(query: $query) { id name category priceCents status createdAt updatedAt } }","variables":"{\n  \"query\": \"USB-C Cable\"\n}"}'
+  --data '{"query":"query SearchCatalogItems($query: String!) { searchCatalogItems(query: $query) { id name category priceCents status createdAt updatedAt } }","variables":"{\n  \"query\": \"\"\n}"}'
 ```
  
  As result:
@@ -329,29 +387,9 @@ Starting the Nextjs on `web/` folder:
 pnpm run dev
 ```
 
-Access http://localhost:3000/
+Accessing http://localhost:3000/catalog, it was possible to validate the whole implementation.
 
-During the review I ran into some tweaks:
-- Alignment
-- Missing CatalogItem hooks (useCatalog)
-
-I also realized the description field was missing and I added it later.
-
-After some backs and forths to adjust the UI we were able to run the catalog page at http://localhost:3000/catalog
-
-
-
-
-- Missed integration tests, input dto and some errors on front end
-
-
-
-
-
-DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -f infra/docker/docker-compose.yml up -d
-
-
-
+The same principle was followed for the other requirements.
 
 # CI/CD
 
