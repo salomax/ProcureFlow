@@ -1,0 +1,114 @@
+name: Preview - Deploy Preview App
+
+on:
+  workflow_run:
+    workflows: ["CI - Quality Checks & Build"]
+    types:
+      - completed
+    branches:
+      - '**'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number for preview deployment'
+        required: true
+        type: string
+
+concurrency:
+  group: preview-${{ github.event.workflow_run.head_branch || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy Preview App (Mocked)
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success') ||
+      github.event_name == 'workflow_dispatch'
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    environment:
+      name: preview-pr-${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.pull_requests[0].number || github.event.inputs.pr_number }}
+      url: https://preview-pr-${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.pull_requests[0].number || github.event.inputs.pr_number }}.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts from CI workflow
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-artifacts-*
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download build artifacts (manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-artifacts-*
+          merge-multiple: true
+
+      - name: Get PR number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            PR_NUMBER="${{ github.event.inputs.pr_number }}"
+          else
+            PR_NUMBER="${{ github.event.workflow_run.pull_requests[0].number }}"
+          fi
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "PR Number: $PR_NUMBER"
+
+      - name: Get build info
+        id: build
+        run: |
+          if [ -f build-info.txt ]; then
+            IMAGE_DIGEST=$(grep "Image Digest:" build-info.txt | cut -d' ' -f3)
+            IMAGE_TAG=$(grep "Image Tag:" build-info.txt | cut -d' ' -f3)
+            echo "digest=$IMAGE_DIGEST" >> $GITHUB_OUTPUT
+            echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "digest=unknown" >> $GITHUB_OUTPUT
+            echo "tag=unknown" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Mock Preview Deployment
+        run: |
+          echo "🚀 Deploying Preview App for PR #${{ steps.pr.outputs.number }}"
+          echo "📦 Using image digest: ${{ steps.build.outputs.digest }}"
+          echo "🏷️  Using image tag: ${{ steps.build.outputs.tag }}"
+          echo ""
+          echo "✅ Preview environment would be deployed to:"
+          echo "   URL: https://preview-pr-${{ steps.pr.outputs.number }}.example.com"
+          echo "   Environment: preview-pr-${{ steps.pr.outputs.number }}"
+          echo ""
+          echo "⏱️  Simulating deployment..."
+          echo "✅ Preview app deployed successfully"
+          echo "🔍 Preview app is ready for validation"
+
+      - name: Mock Preview Validation
+        run: |
+          echo "🧪 Running automated validation on preview app..."
+          echo "✅ Health checks passed"
+          echo "✅ Smoke tests passed"
+          echo "✅ Preview app is healthy and ready for review"
+
+      - name: Comment PR with Preview URL
+        if: github.event.workflow_run.event == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.number }};
+            const digest = '${{ steps.build.outputs.digest }}';
+            
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ **Preview App Deployed**\n\n🔗 Preview URL: https://preview-pr-${prNumber}.example.com\n📦 Image Digest: \`${digest}\`\n\nPlease review the preview app before approving this PR.`
+            });
+

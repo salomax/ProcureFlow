@@ -1,0 +1,55 @@
+name: CI - Quality Checks & Build
+
+on:
+  pull_request:
+    branches: ['**']
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: 1
+  TESTCONTAINERS_RYUK_DISABLED: true
+
+jobs:
+  # ============================================
+  # Backend Tests (Matrix)
+  # ============================================
+  backend-tests:
+    name: Backend Tests (${{ matrix.service }})
+    strategy:
+      matrix:
+        service: [app, assistant, security, common]
+      fail-fast: false
+    uses: ./.github/workflows/reusable/backend-tests.yml
+    with:
+      service: ${{ matrix.service }}
+
+  # ============================================
+  # Frontend Tests
+  # ============================================
+  frontend-tests:
+    name: Frontend Tests
+    uses: ./.github/workflows/reusable/frontend-tests.yml
+
+  # ============================================
+  # Security Scan
+  # ============================================
+  security-scan:
+    name: Security Scan
+    uses: ./.github/workflows/reusable/security-scan.yml
+
+  # ============================================
+  # Build Docker Images
+  # ============================================
+  build:
+    name: Build Docker Images
+    needs: [backend-tests, frontend-tests, security-scan]
+    uses: ./.github/workflows/reusable/build.yml
+    secrets: inherit
+
