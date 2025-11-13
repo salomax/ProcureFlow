@@ -61,104 +61,146 @@ jobs:
           echo "Discovered services: $SERVICES_JSON"
 
   # ============================================
-  # Build Docker Images (using same digest from staging)
+  # Get Staging Image Info (Promote, Don't Rebuild)
   # ============================================
-  build:
-    name: Build Docker Images
+  get-staging-image:
+    name: Get Staging Image Info
     runs-on: ubuntu-latest
-    needs: discover-services
+    permissions:
+      actions: read
+      contents: read
     outputs:
-      image-digest: ${{ steps.meta.outputs.digest }}
-      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.staging-info.outputs.image-digest }}
+      image-tag: ${{ steps.staging-info.outputs.image-tag }}
+      staging-commit: ${{ steps.tag.outputs.commit-sha }}
       version: ${{ steps.tag.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to resolve tag to commit
 
-      - name: Get version tag
+      - name: Get version tag and commit SHA
         id: tag
         run: |
           if [ "${{ github.event_name }}" == "release" ]; then
             VERSION="${{ github.event.release.tag_name }}"
+            COMMIT_SHA="${{ github.event.release.target_commitish }}"
           else
             VERSION="${GITHUB_REF#refs/tags/}"
+            COMMIT_SHA=$(git rev-parse ${{ github.ref }})
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "commit-sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
+          echo "Commit SHA: $COMMIT_SHA"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Create .env file for Docker Compose
-        run: |
-          cat > .env << EOF
-          # Database
-          POSTGRES_USER=procureflow
-          POSTGRES_PASSWORD=procureflow
-          POSTGRES_DB=procureflow_db
-          POSTGRES_HOST=postgres
-          POSTGRES_PORT=5432
-          DATABASE_URL=jdbc:postgresql://postgres:5432/procureflow_db
-          
-          # Application
-          APP_NAME=procureflow
-          APP_LOCALE=en-US
-          
-          # Frontend
-          NEXT_PUBLIC_GRAPHQL_URL=http://router:4000/graphql
-          
-          # Grafana
-          GF_SECURITY_ADMIN_USER=admin
-          GF_SECURITY_ADMIN_PASSWORD=admin
-          
-          # AI (sensitive - from secrets)
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          EOF
-
-      - name: Build Docker images
-        working-directory: infra/docker
-        env:
-          DOCKER_BUILDKIT: 1
-          COMPOSE_DOCKER_CLI_BUILD: 1
-        run: docker compose -f docker-compose.yml build --no-cache
-
-      - name: Get image metadata
-        id: meta
-        run: |
-          IMAGE_DIGEST=$(docker images --format "{{.ID}}" | head -1)
-          IMAGE_TAG="${{ steps.tag.outputs.version }}"
-          echo "digest=$IMAGE_DIGEST" >> $GITHUB_OUTPUT
-          echo "tags=$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Verify images
-        run: |
-          echo "Built Docker images:"
-          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -10
-          echo "All required images built successfully"
-          echo "Image digest: ${{ steps.meta.outputs.digest }}"
-          echo "Image tag: ${{ steps.meta.outputs.tags }}"
-
-      - name: Save build artifacts
-        run: |
-          echo "Build completed at $(date)" > build-info.txt
-          echo "Commit: ${{ github.sha }}" >> build-info.txt
-          echo "Version: ${{ steps.tag.outputs.version }}" >> build-info.txt
-          echo "Image Digest: ${{ steps.meta.outputs.digest }}" >> build-info.txt
-          echo "Image Tag: ${{ steps.meta.outputs.tags }}" >> build-info.txt
-
-      - name: Save image list
-        run: |
-          docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(procureflow|app|assistant|security|web)" > image-list.txt || true
-          echo "Images built:" && cat image-list.txt || echo "No custom images found"
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Find staging workflow run for this commit
+        id: staging-run
+        uses: actions/github-script@v7
         with:
-          name: build-artifacts-production-${{ steps.tag.outputs.version }}
-          path: |
-            build-info.txt
-            image-list.txt
-          retention-days: 90
+          script: |
+            const commitSha = '${{ steps.tag.outputs.commit-sha }}';
+            const workflowName = 'Staging Flow';
+            
+            // Find the staging workflow run for this commit
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: workflowName,
+              head_sha: commitSha,
+              per_page: 1
+            });
+            
+            if (runs.data.workflow_runs.length === 0) {
+              throw new Error(`No staging workflow run found for commit ${commitSha}. Make sure the code was deployed to staging first.`);
+            }
+            
+            const run = runs.data.workflow_runs[0];
+            console.log(`Found staging workflow run: ${run.id} (${run.status})`);
+            
+            if (run.status !== 'completed' || run.conclusion !== 'success') {
+              throw new Error(`Staging workflow run ${run.id} did not complete successfully (status: ${run.status}, conclusion: ${run.conclusion}). Cannot promote to production.`);
+            }
+            
+            return run.id;
+
+      - name: Get artifact name
+        id: artifact-name
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runId = ${{ steps.staging-run.outputs.result }};
+            const commitSha = '${{ steps.tag.outputs.commit-sha }}';
+            
+            // List artifacts from the staging workflow run
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId
+            });
+            
+            const stagingArtifact = artifacts.data.artifacts.find(
+              a => a.name.startsWith('build-artifacts-staging-')
+            );
+            
+            if (!stagingArtifact) {
+              throw new Error(`No staging build artifacts found for commit ${commitSha}`);
+            }
+            
+            console.log(`Found staging artifact: ${stagingArtifact.name} (${stagingArtifact.id})`);
+            return stagingArtifact.name;
+
+      - name: Download artifact using GitHub CLI
+        id: download-file
+        run: |
+          # Use GitHub CLI to download the artifact from the staging workflow run
+          gh run download ${{ steps.staging-run.outputs.result }} \
+            --name "${{ steps.artifact-name.outputs.result }}" \
+            --dir staging-artifacts-extracted
+          
+          # The artifact is downloaded as a zip, extract it
+          if [ -f "staging-artifacts-extracted/${{ steps.artifact-name.outputs.result }}.zip" ]; then
+            unzip -q "staging-artifacts-extracted/${{ steps.artifact-name.outputs.result }}.zip" -d staging-artifacts/
+          elif [ -d "staging-artifacts-extracted" ]; then
+            # Artifact might already be extracted
+            cp -r staging-artifacts-extracted staging-artifacts/
+          fi
+          
+          echo "artifact-dir=staging-artifacts" >> $GITHUB_OUTPUT
+
+      - name: Extract staging image info
+        id: staging-info
+        run: |
+          # Read the build-info.txt to get image digest and tag
+          ARTIFACT_DIR="${{ steps.download-file.outputs.artifact-dir }}"
+          
+          if [ -f "$ARTIFACT_DIR/build-info.txt" ]; then
+            IMAGE_DIGEST=$(grep "Image Digest:" "$ARTIFACT_DIR/build-info.txt" | cut -d' ' -f3)
+            IMAGE_TAG=$(grep "Image Tag:" "$ARTIFACT_DIR/build-info.txt" | cut -d' ' -f3)
+            
+            echo "image-digest=$IMAGE_DIGEST" >> $GITHUB_OUTPUT
+            echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+            
+            echo "✅ Found staging image info:"
+            echo "   Digest: $IMAGE_DIGEST"
+            echo "   Tag: $IMAGE_TAG"
+          else
+            echo "❌ Error: build-info.txt not found in staging artifacts"
+            echo "Contents of $ARTIFACT_DIR:"
+            ls -la "$ARTIFACT_DIR" || echo "Directory does not exist"
+            exit 1
+          fi
+
+      - name: Verify staging image info
+        run: |
+          echo "📦 Staging Image Info (to be promoted to production):"
+          echo "   Digest: ${{ steps.staging-info.outputs.image-digest }}"
+          echo "   Tag: ${{ steps.staging-info.outputs.image-tag }}"
+          echo "   Commit: ${{ steps.tag.outputs.commit-sha }}"
+          echo "   Version: ${{ steps.tag.outputs.version }}"
+          echo ""
+          echo "✅ Using exact same image that was tested in staging"
 
   # ============================================
   # Production: Deploy on tag/release
@@ -166,27 +208,26 @@ jobs:
   production-deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [get-staging-image]
     permissions:
       contents: write
     environment:
       name: production
+      url: https://production.example.com
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: build-artifacts-production-*
-          merge-multiple: true
-
       - name: Deploy to Production (Canary Rollout)
         run: |
           echo "🚀 Deploying to Production (Canary Rollout)"
-          echo "📦 Using image digest: ${{ needs.build.outputs.image-digest }}"
-          echo "🏷️  Version: ${{ needs.build.outputs.version }}"
-          echo "📝 Promoting same digest from staging to production"
+          echo "📦 Using image digest: ${{ needs.get-staging-image.outputs.image-digest }}"
+          echo "🏷️  Using image tag: ${{ needs.get-staging-image.outputs.image-tag }}"
+          echo "📝 Version: ${{ needs.get-staging-image.outputs.version }}"
+          echo "📝 Staging commit: ${{ needs.get-staging-image.outputs.staging-commit }}"
+          echo ""
+          echo "✅ Promoting EXACT same image from staging to production"
+          echo "   This ensures 100% validity of staging tests"
           echo ""
           echo "✅ Production environment would be deployed to:"
           echo "   Environment: production"
@@ -222,29 +263,67 @@ jobs:
       - name: Production Deployment Summary
         run: |
           echo "✅ Production deployment completed successfully"
-          echo "📦 Image digest: ${{ needs.build.outputs.image-digest }}"
-          echo "🏷️  Version: ${{ needs.build.outputs.version }}"
+          echo "📦 Image digest: ${{ needs.get-staging-image.outputs.image-digest }}"
+          echo "🏷️  Image tag: ${{ needs.get-staging-image.outputs.image-tag }}"
+          echo "📝 Version: ${{ needs.get-staging-image.outputs.version }}"
+          echo "📝 Staging commit: ${{ needs.get-staging-image.outputs.staging-commit }}"
           echo "🔗 Production URL: https://prod.example.com"
           echo "📊 Deployment strategy: Canary (100% complete)"
           echo "✅ All health checks and SLOs passed"
+          echo "✅ Using exact same image tested in staging"
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release with Automatic Notes
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         uses: actions/github-script@v7
         with:
           script: |
-            const version = '${{ needs.build.outputs.version }}';
-            const digest = '${{ needs.build.outputs.image-digest }}';
+            const version = '${{ needs.get-staging-image.outputs.version }}';
+            const digest = '${{ needs.get-staging-image.outputs.image-digest }}';
+            const stagingCommit = '${{ needs.get-staging-image.outputs.staging-commit }}';
             
-            github.rest.repos.createRelease({
+            // Get previous release tag for comparison
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 1
+            });
+            const previousTag = releases.data.length > 0 ? releases.data[0].tag_name : null;
+            
+            // Generate automatic release notes using GitHub's API
+            // This automatically categorizes commits and PRs
+            const generatedNotes = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: version,
+              target_commitish: context.sha,
+              previous_tag_name: previousTag || undefined
+            });
+            
+            // Enhance with deployment details
+            const deploymentDetails = `\n\n---\n\n### 🚀 Deployment Details\n\n` +
+              `✅ **Status**: Deployed to production\n` +
+              `📦 **Image Digest**: \`${digest}\`\n` +
+              `📝 **Staging Commit**: \`${stagingCommit}\`\n` +
+              `🔗 **Production URL**: https://prod.example.com\n` +
+              `📊 **Strategy**: Canary Rollout\n` +
+              `✅ **Promoted from staging**: Using exact same image that passed all staging tests\n` +
+              `✅ All health checks passed\n` +
+              `✅ SLO/SLA targets met\n`;
+            
+            const enhancedBody = generatedNotes.data.body + deploymentDetails;
+            
+            // Create the release with enhanced notes
+            await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: version,
               name: `Release ${version}`,
-              body: `## Release ${version}\n\n✅ Deployed to production\n📦 Image Digest: \`${digest}\`\n🔗 Production URL: https://prod.example.com\n\n### Deployment Details\n- Strategy: Canary Rollout\n- Status: ✅ Healthy\n- All health checks passed\n- SLO/SLA targets met`,
+              body: enhancedBody,
               draft: false,
               prerelease: false
             });
+            
+            console.log(`✅ Release ${version} created with automatic release notes`);
 
   # ============================================
   # Production: Auto-Rollback (if unhealthy)
