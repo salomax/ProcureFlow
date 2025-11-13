@@ -450,6 +450,21 @@ Deterministic deployments, create a semantic tag vX.Y.Z; promote the same digest
 
 Gate via GitHub Environments (approvals), roll out (canary/blue-green), monitor, and auto-rollback if metrics degrade.
 
+To trigger it:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+Or create a release in the GitHub UI, which can also create the tag automatically
+
+**Automatic Release Notes**: When a release is created, the workflow automatically generates release notes using GitHub's API, which:
+- Categorizes commits and PRs (e.g., Features, Bug Fixes, Documentation)
+- Lists all merged PRs since the previous release
+- Includes deployment details (image digest, deployment strategy, health status)
+- Provides a clean, formatted changelog automatically
+
+
+
 ### Post-Release Verification & Rollback
 
 Health checks, SLO/SLA monitors, error-rate guards.

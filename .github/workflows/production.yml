@@ -228,7 +228,7 @@ jobs:
           echo "📊 Deployment strategy: Canary (100% complete)"
           echo "✅ All health checks and SLOs passed"
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release with Automatic Notes
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         uses: actions/github-script@v7
         with:
@@ -236,15 +236,47 @@ jobs:
             const version = '${{ needs.build.outputs.version }}';
             const digest = '${{ needs.build.outputs.image-digest }}';
             
-            github.rest.repos.createRelease({
+            // Get previous release tag for comparison
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 1
+            });
+            const previousTag = releases.data.length > 0 ? releases.data[0].tag_name : null;
+            
+            // Generate automatic release notes using GitHub's API
+            // This automatically categorizes commits and PRs
+            const generatedNotes = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: version,
+              target_commitish: context.sha,
+              previous_tag_name: previousTag || undefined
+            });
+            
+            // Enhance with deployment details
+            const deploymentDetails = `\n\n---\n\n### 🚀 Deployment Details\n\n` +
+              `✅ **Status**: Deployed to production\n` +
+              `📦 **Image Digest**: \`${digest}\`\n` +
+              `🔗 **Production URL**: https://prod.example.com\n` +
+              `📊 **Strategy**: Canary Rollout\n` +
+              `✅ All health checks passed\n` +
+              `✅ SLO/SLA targets met\n`;
+            
+            const enhancedBody = generatedNotes.data.body + deploymentDetails;
+            
+            // Create the release with enhanced notes
+            await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: version,
               name: `Release ${version}`,
-              body: `## Release ${version}\n\n✅ Deployed to production\n📦 Image Digest: \`${digest}\`\n🔗 Production URL: https://prod.example.com\n\n### Deployment Details\n- Strategy: Canary Rollout\n- Status: ✅ Healthy\n- All health checks passed\n- SLO/SLA targets met`,
+              body: enhancedBody,
               draft: false,
               prerelease: false
             });
+            
+            console.log(`✅ Release ${version} created with automatic release notes`);
 
   # ============================================
   # Production: Auto-Rollback (if unhealthy)
