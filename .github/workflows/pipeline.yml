@@ -205,7 +205,7 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
-        run: docker-compose -f docker-compose.yml build --no-cache
+        run: docker compose -f docker-compose.yml build --no-cache
 
       - name: Get image metadata
         id: meta
