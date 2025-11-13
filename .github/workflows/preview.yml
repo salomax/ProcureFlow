@@ -26,30 +26,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: wrapper
-
-      - name: Discover services from Gradle
+      - name: Discover services from settings.gradle.kts
         id: set-services
-        working-directory: ./service/kotlin
         run: |
-          # Get list of subprojects from Gradle, filter out root project, extract service names
-          SERVICES=$(./gradlew projects --console=plain 2>/dev/null | \
-            grep -E "Project ':[^']+'" | \
-            sed "s/Project '://" | \
-            sed "s/'//" | \
-            sed "s/^://" | \
-            grep -v "^$" | \
-            sort)
+          # Extract service names directly from settings.gradle.kts (much faster than running Gradle)
+          # Parse the include() statement and extract service names
+          SERVICES_JSON=$(python3 << 'EOF'
+          import re
+          import json
           
-          # Convert to JSON array format using jq or Python
-          if command -v jq &> /dev/null; then
-            SERVICES_JSON=$(echo "$SERVICES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          else
-            SERVICES_JSON=$(echo "$SERVICES" | python3 -c "import sys, json; print(json.dumps([line.strip() for line in sys.stdin if line.strip()]))")
-          fi
+          with open('service/kotlin/settings.gradle.kts', 'r') as f:
+              content = f.read()
+          
+          # Extract all service names from include() statement
+          # Pattern matches ":service" within the include() call
+          services = re.findall(r'include\([^)]+\)', content)
+          if services:
+              # Extract all ":service" patterns from the include statement
+              service_names = re.findall(r'":([^"]+)"', services[0])
+              service_names = sorted(list(set(service_names)))
+              print(json.dumps(service_names))
+          else:
+              # Fallback: extract all ":service" patterns from entire file
+              service_names = re.findall(r'":([^"]+)"', content)
+              service_names = sorted(list(set(service_names)))
+              print(json.dumps(service_names))
+          EOF
+          )
           
           echo "services=$SERVICES_JSON" >> $GITHUB_OUTPUT
           echo "Discovered services: $SERVICES_JSON"
