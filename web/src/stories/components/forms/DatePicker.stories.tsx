@@ -31,38 +31,44 @@ const meta: Meta<typeof DatePickerField> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const DefaultWrapper = () => {
+  const methods = useForm();
+  return (
+    <FormProvider {...methods}>
+      <DatePickerField name="date" label="Select Date" />
+    </FormProvider>
+  );
+};
+
+const WithHelperTextWrapper = () => {
+  const methods = useForm();
+  return (
+    <FormProvider {...methods}>
+      <DatePickerField name="date" label="Select Date" helperText="Choose a date" />
+    </FormProvider>
+  );
+};
+
+const WithErrorWrapper = () => {
+  const methods = useForm({
+    defaultValues: { date: null },
+    mode: 'onChange'
+  });
+  return (
+    <FormProvider {...methods}>
+      <DatePickerField name="date" label="Select Date" helperText="This field has an error" />
+    </FormProvider>
+  );
+};
+
 export const Default: Story = {
-  render: () => {
-    const methods = useForm();
-    return (
-      <FormProvider {...methods}>
-        <DatePickerField name="date" label="Select Date" />
-      </FormProvider>
-    );
-  },
+  render: () => <DefaultWrapper />,
 };
 
 export const WithHelperText: Story = {
-  render: () => {
-    const methods = useForm();
-    return (
-      <FormProvider {...methods}>
-        <DatePickerField name="date" label="Select Date" helperText="Choose a date" />
-      </FormProvider>
-    );
-  },
+  render: () => <WithHelperTextWrapper />,
 };
 
 export const WithError: Story = {
-  render: () => {
-    const methods = useForm({
-      defaultValues: { date: null },
-      mode: 'onChange'
-    });
-    return (
-      <FormProvider {...methods}>
-        <DatePickerField name="date" label="Select Date" helperText="This field has an error" />
-      </FormProvider>
-    );
-  },
+  render: () => <WithErrorWrapper />,
 };

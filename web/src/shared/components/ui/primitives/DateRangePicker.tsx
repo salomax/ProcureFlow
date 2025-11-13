@@ -105,6 +105,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [leftCalendarMonth, setLeftCalendarMonth] = useState<Dayjs>(dayjs());
   const [rightCalendarMonth, setRightCalendarMonth] = useState<Dayjs>(dayjs().add(1, 'month'));
   const isSelectingDateRef = useRef(false);
+  const initializedRef = useRef(false);
   
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value : internalValue;
@@ -112,7 +113,8 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   // Initialize temp values and calendar months when dialog opens
   useEffect(() => {
-    if (open) {
+    if (open && !initializedRef.current) {
+      initializedRef.current = true;
       setTempStart(rangeValue.start);
       setTempEnd(rangeValue.end);
       
@@ -142,6 +144,9 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         setLeftCalendarMonth(now);
         setRightCalendarMonth(now.add(1, 'month'));
       }
+    } else if (!open) {
+      // Reset initialization flag when dialog closes
+      initializedRef.current = false;
     }
   }, [open, rangeValue.start, rangeValue.end]);
 
@@ -266,8 +271,8 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   };
 
   const shouldDisableDate = useCallback((date: Dayjs) => {
-    const min = getMinDate();
-    const max = getMaxDate();
+    const min = minDate || (disablePast ? dayjs() : undefined);
+    const max = maxDate || (disableFuture ? dayjs() : undefined);
     
     if (min && date.isBefore(min, 'day')) return true;
     if (max && date.isAfter(max, 'day')) return true;

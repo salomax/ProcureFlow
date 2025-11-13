@@ -173,20 +173,22 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
       case 'hex':
         hex = input.startsWith('#') ? input : `#${input}`;
         break;
-      case 'rgb':
+      case 'rgb': {
         const rgbMatch = input.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/);
         if (rgbMatch) {
           const [, r, g, b] = rgbMatch.map(Number);
           hex = rgbToHex(r!, g!, b!);
         }
         break;
-      case 'hsl':
+      }
+      case 'hsl': {
         const hslMatch = input.match(/^hsl\(\s*(\d{1,3})\s*,\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*\)$/);
         if (hslMatch) {
           const [, h, s, l] = hslMatch.map(Number);
           hex = hslToHex(h!, s!, l!);
         }
         break;
+      }
     }
     
     return hex;
@@ -210,7 +212,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
     setInputValue(color);
     onChange?.(color);
     handleClose();
-  }, [onChange]);
+  }, [onChange, handleClose]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;

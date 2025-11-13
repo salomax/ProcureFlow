@@ -1,29 +1,17 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import testingLibrary from "eslint-plugin-testing-library";
-import nextConfig from "eslint-config-next";
+import nextPlugin from "eslint-config-next/core-web-vitals";
+import globals from "globals";
 
-export default [
+const config = [
   { ignores: ["node_modules/**", ".next/**", "dist/**", "coverage/**", "playwright-report/**", "test-results/**", "src/lib/graphql/types/__generated__/**", "**/*.generated.ts"] },
-
-  // Next.js config
-  ...nextConfig,
 
   // Base JS rules
   js.configs.recommended,
 
-  // TypeScript (type-checked)
-  ...tseslint.configs.recommendedTypeChecked.map((cfg) => ({
-    ...cfg,
-    languageOptions: {
-      ...cfg.languageOptions,
-      parserOptions: {
-        ...cfg.languageOptions?.parserOptions,
-        project: ["./tsconfig.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  })),
+  // Next.js config (includes TypeScript ESLint)
+  ...nextPlugin,
 
   {
     files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
@@ -31,6 +19,7 @@ export default [
       parserOptions: { project: null, sourceType: 'module', ecmaVersion: 'latest' },
     },
     rules: {
+      // Disable TypeScript-specific rules for JS files
       '@typescript-eslint/no-var-requires': 'off',
       '@typescript-eslint/await-thenable': 'off',
       '@typescript-eslint/no-array-delete': 'off',
@@ -44,9 +33,13 @@ export default [
     },
   },
 
-
   {
     files: ["**/__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
+    languageOptions: {
+      globals: {
+        ...globals.vitest,
+      },
+    },
     plugins: { "testing-library": testingLibrary },
     rules: {
       "testing-library/no-node-access": "error",
@@ -57,7 +50,9 @@ export default [
   {
     rules: {
       "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      // Note: @typescript-eslint/no-unused-vars is configured by nextPlugin
     },
   },
 ];
+
+export default config;
