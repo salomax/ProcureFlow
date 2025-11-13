@@ -80,7 +80,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 justifyContent: 'space-between',
                 p: 2,
                 minHeight: 64,
-                minWidth: width
+                width: width
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>

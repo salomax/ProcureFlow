@@ -132,6 +132,174 @@ class CatalogItemServiceIntegrationTest : BaseIntegrationTest(), PostgresIntegra
     }
 
     @Test
+    fun `should search catalog items by description`() {
+        // Arrange - create test items with descriptions
+        val item1 = CatalogItem(
+            name = "Screwdriver Set",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 5000L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Professional screwdriver set with multiple sizes"
+        )
+        val item2 = CatalogItem(
+            name = "Hammer",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 3000L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Heavy-duty hammer for construction work"
+        )
+        val item3 = CatalogItem(
+            name = "Wrench",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 4000L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Adjustable wrench for plumbing"
+        )
+
+        catalogItemService.create(item1)
+        catalogItemService.create(item2)
+        catalogItemService.create(item3)
+
+        // Act - search for "construction" which is in description
+        val results = catalogItemService.search("construction")
+
+        // Assert
+        assertThat(results).hasSize(1)
+        assertThat(results[0].name).isEqualTo("Hammer")
+        assertThat(results[0].description).contains("construction")
+    }
+
+    @Test
+    fun `should search catalog items with partial match`() {
+        // Arrange - create test items
+        val item1 = CatalogItem(
+            name = "Parafuso Phillips",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 100L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Screw with Phillips head"
+        )
+        val item2 = CatalogItem(
+            name = "Parafusadeira Elétrica",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 15000L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Electric screwdriver"
+        )
+        val item3 = CatalogItem(
+            name = "Martelo",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 3000L,
+            status = CatalogItemStatus.ACTIVE
+        )
+
+        catalogItemService.create(item1)
+        catalogItemService.create(item2)
+        catalogItemService.create(item3)
+
+        // Act - search for partial term "paraf" which should match both items
+        val results = catalogItemService.search("paraf")
+
+        // Assert - should match items containing "paraf" in name
+        assertThat(results).hasSize(2)
+        assertThat(results.map { it.name }).containsExactlyInAnyOrder("Parafuso Phillips", "Parafusadeira Elétrica")
+    }
+
+    @Test
+    fun `should search catalog items case-insensitively`() {
+        // Arrange - create test items
+        val item1 = CatalogItem(
+            name = "USB-C Cable",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 1500L,
+            status = CatalogItemStatus.ACTIVE
+        )
+        val item2 = CatalogItem(
+            name = "HDMI Adapter",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 2000L,
+            status = CatalogItemStatus.ACTIVE
+        )
+
+        catalogItemService.create(item1)
+        catalogItemService.create(item2)
+
+        // Act - search with lowercase
+        val results = catalogItemService.search("usb-c")
+
+        // Assert
+        assertThat(results).hasSize(1)
+        assertThat(results[0].name).isEqualTo("USB-C Cable")
+    }
+
+    @Test
+    fun `should search catalog items matching both name and description`() {
+        // Arrange - create test items
+        val item1 = CatalogItem(
+            name = "Laptop Computer",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 500000L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "High-performance laptop for professional use"
+        )
+        val item2 = CatalogItem(
+            name = "Desktop Computer",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 600000L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Powerful desktop for gaming and work"
+        )
+        val item3 = CatalogItem(
+            name = "Mouse",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 5000L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Computer mouse with ergonomic design"
+        )
+
+        catalogItemService.create(item1)
+        catalogItemService.create(item2)
+        catalogItemService.create(item3)
+
+        // Act - search for "computer" which appears in both name and description
+        val results = catalogItemService.search("computer")
+
+        // Assert - should match all items containing "computer" in name or description
+        assertThat(results).hasSize(3)
+        assertThat(results.map { it.name }).containsExactlyInAnyOrder("Laptop Computer", "Desktop Computer", "Mouse")
+    }
+
+    @Test
+    fun `should search catalog items with partial match in description`() {
+        // Arrange - create test items
+        val item1 = CatalogItem(
+            name = "Screw Set",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 2000L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Set of various screws including Phillips and flat head"
+        )
+        val item2 = CatalogItem(
+            name = "Nail Set",
+            category = CatalogItemCategory.MATERIAL,
+            priceCents = 1500L,
+            status = CatalogItemStatus.ACTIVE,
+            description = "Assorted nails for construction"
+        )
+
+        catalogItemService.create(item1)
+        catalogItemService.create(item2)
+
+        // Act - search for partial term "phill" which should match item1 description
+        val results = catalogItemService.search("phill")
+
+        // Assert
+        assertThat(results).hasSize(1)
+        assertThat(results[0].name).isEqualTo("Screw Set")
+        assertThat(results[0].description).contains("Phillips")
+    }
+
+    @Test
     fun `should create catalog item with pending approval status`() {
         // Arrange
         val item = CatalogItem(

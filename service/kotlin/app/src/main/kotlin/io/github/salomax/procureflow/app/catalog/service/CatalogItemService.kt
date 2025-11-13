@@ -19,7 +19,8 @@ open class CatalogItemService(
         val entities = if (query.isBlank()) {
             repo.findAll()
         } else {
-            repo.findByNameContainingIgnoreCase(query.trim())
+            // Use full-text search that supports name and description, partial matches, and plural forms
+            repo.searchByNameOrDescription(query.trim())
         }
         val items = entities.map { it.toDomain() }
         logAuditData("SEARCH", "CatalogItemService", null, "query" to (query.ifBlank { "*" }), "count" to items.size)

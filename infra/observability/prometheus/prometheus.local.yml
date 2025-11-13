@@ -23,7 +23,7 @@ scrape_configs:
   - job_name: 'app'
     static_configs:
       - targets: ['host.docker.internal:8081']  # Host machine port where app runs locally
-    metrics_path: '/prometheus
+    metrics_path: '/prometheus'
     
   # Monitor the Assistant service
   # Service runs locally on port 8082 (from application.yml)
