@@ -28,7 +28,7 @@ jobs:
   # ============================================
   ci-checks:
     name: CI Checks
-    uses: ./ci.yml@main
+    uses: ./.github/workflows/ci.yml@main
     secrets: inherit
 
   # ============================================
