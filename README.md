@@ -392,6 +392,10 @@ The same principle was followed for the other requirements.
 
 The assistant service is chat interface for catalog operations, using LLM with function calling to translate natural language requests into GraphQL operations against the federated endpoint.
 
+This custom implementation provides tight integration with GraphQL federation architecture and full control over tool execution, but for teams needing standardized tool interoperability, resource management, and multi-model support, **Model Context Protocol (MCP)** is a choice, especially when integrating with external services, sharing tools across multiple AI applications, or requiring standardized tool definitions that work across different AI providers and frameworks.
+
+#### Flow
+
 - **Assistant Resolver** receives chat mutation requests via GraphQL endpoint
 - **Conversation Service** retrieves or creates conversation context for the session
 - **Assistant Agent** orchestrates the message processing workflow

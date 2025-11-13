@@ -295,6 +295,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '✅ **Preview App Deployed**\n\n🔗 Preview URL: https://preview-pr-${{ github.event.pull_request.number }}.example.com\n📦 Image Digest: `${{ needs.build.outputs.image-digest }}`\n\nPlease review the preview app before approving this PR.'
+            });
 
   # ============================================
   # Staging: Deploy on merge to main
