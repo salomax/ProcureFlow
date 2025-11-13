@@ -347,6 +347,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           borderColor: 'divider',
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={url}
           alt={file.name}

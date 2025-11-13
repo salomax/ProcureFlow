@@ -48,6 +48,14 @@ const config = [
   },
 
   {
+    files: ["**/*.stories.{ts,tsx}"],
+    rules: {
+      // Storybook stories commonly use hooks in render functions, which is acceptable
+      "react-hooks/rules-of-hooks": "off",
+    },
+  },
+
+  {
     rules: {
       "no-unused-vars": "off",
       // Note: @typescript-eslint/no-unused-vars is configured by nextPlugin

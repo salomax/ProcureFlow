@@ -33,6 +33,7 @@ function registerDomain(translations: DomainTranslations) {
  * Smart i18n hook with method overloading
  * Supports both single domain and multiple domains with automatic fallback to common
  */
+/* eslint-disable no-redeclare -- TypeScript function overloads are valid */
 export function useTranslation(domainTranslations: DomainTranslations): {
   t: TranslationFunction;
   tDomain: TranslationFunction;
@@ -46,6 +47,7 @@ export function useTranslation(domainTranslations: DomainTranslations[]): {
 };
 
 export function useTranslation(domainTranslations: DomainTranslations | DomainTranslations[]): any {
+/* eslint-enable no-redeclare */
   // Register domains immediately (synchronously) - only if not already registered
   const isArray = Array.isArray(domainTranslations);
   if (isArray) {

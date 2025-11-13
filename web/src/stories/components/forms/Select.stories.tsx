@@ -45,64 +45,70 @@ export const Default: Story = {
   },
 };
 
+const StatesWrapper = () => {
+  const methods = useForm();
+  return (
+    <FormProvider {...methods}>
+      <Stack spacing={3} sx={{ width: 300 }}>
+        <SelectField name="normal" label="Normal" options={options} />
+        <SelectField name="helper" label="With Helper Text" options={options} helperText="Choose an option" />
+        <SelectField name="error" label="Error State" options={options} helperText="This field has an error" />
+        <SelectField name="disabled" label="Disabled" options={options} />
+        <SelectField name="required" label="Required" options={options} />
+      </Stack>
+    </FormProvider>
+  );
+};
+
+const MultipleWrapper = () => {
+  const methods = useForm();
+  return (
+    <FormProvider {...methods}>
+      <Box sx={{ width: 300 }}>
+        <SelectField 
+          name="multiple"
+          label="Multiple Selection" 
+          options={options} 
+          helperText="Select an option"
+        />
+      </Box>
+    </FormProvider>
+  );
+};
+
+const WithGroupsWrapper = () => {
+  const groupedOptions = [
+    { value: 'fruits', label: 'Fruits', group: 'Category 1' },
+    { value: 'apple', label: 'Apple', group: 'Category 1' },
+    { value: 'banana', label: 'Banana', group: 'Category 1' },
+    { value: 'vegetables', label: 'Vegetables', group: 'Category 2' },
+    { value: 'carrot', label: 'Carrot', group: 'Category 2' },
+    { value: 'broccoli', label: 'Broccoli', group: 'Category 2' },
+  ];
+  
+  const methods = useForm();
+  return (
+    <FormProvider {...methods}>
+      <Box sx={{ width: 300 }}>
+        <SelectField 
+          name="grouped"
+          label="Grouped Options" 
+          options={groupedOptions}
+          helperText="Options are grouped by category"
+        />
+      </Box>
+    </FormProvider>
+  );
+};
+
 export const States: Story = {
-  render: () => {
-    const methods = useForm();
-    return (
-      <FormProvider {...methods}>
-        <Stack spacing={3} sx={{ width: 300 }}>
-          <SelectField name="normal" label="Normal" options={options} />
-          <SelectField name="helper" label="With Helper Text" options={options} helperText="Choose an option" />
-          <SelectField name="error" label="Error State" options={options} helperText="This field has an error" />
-          <SelectField name="disabled" label="Disabled" options={options} />
-          <SelectField name="required" label="Required" options={options} />
-        </Stack>
-      </FormProvider>
-    );
-  },
+  render: () => <StatesWrapper />,
 };
 
 export const Multiple: Story = {
-  render: () => {
-    const methods = useForm();
-    return (
-      <FormProvider {...methods}>
-        <Box sx={{ width: 300 }}>
-          <SelectField 
-            name="multiple"
-            label="Multiple Selection" 
-            options={options} 
-            helperText="Select an option"
-          />
-        </Box>
-      </FormProvider>
-    );
-  },
+  render: () => <MultipleWrapper />,
 };
 
 export const WithGroups: Story = {
-  render: () => {
-    const groupedOptions = [
-      { value: 'fruits', label: 'Fruits', group: 'Category 1' },
-      { value: 'apple', label: 'Apple', group: 'Category 1' },
-      { value: 'banana', label: 'Banana', group: 'Category 1' },
-      { value: 'vegetables', label: 'Vegetables', group: 'Category 2' },
-      { value: 'carrot', label: 'Carrot', group: 'Category 2' },
-      { value: 'broccoli', label: 'Broccoli', group: 'Category 2' },
-    ];
-    
-    const methods = useForm();
-    return (
-      <FormProvider {...methods}>
-        <Box sx={{ width: 300 }}>
-          <SelectField 
-            name="grouped"
-            label="Grouped Options" 
-            options={groupedOptions}
-            helperText="Options are grouped by category"
-          />
-        </Box>
-      </FormProvider>
-    );
-  },
+  render: () => <WithGroupsWrapper />,
 };

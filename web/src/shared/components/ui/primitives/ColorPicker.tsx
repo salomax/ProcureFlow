@@ -201,11 +201,11 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
     setInputValue(value);
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setAnchorEl(null);
     setTempColor(value);
     setInputValue(value);
-  };
+  }, [value]);
 
   const handleColorSelect = useCallback((color: string) => {
     setTempColor(color);

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   FormControl,
   FormLabel,
@@ -109,12 +109,13 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value : internalValue;
-  const rangeValue = currentValue || { start: null, end: null };
+  const rangeValue = useMemo(() => currentValue || { start: null, end: null }, [currentValue]);
 
   // Initialize temp values and calendar months when dialog opens
   useEffect(() => {
     if (open && !initializedRef.current) {
       initializedRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initializing dialog state on open
       setTempStart(rangeValue.start);
       setTempEnd(rangeValue.end);
       
