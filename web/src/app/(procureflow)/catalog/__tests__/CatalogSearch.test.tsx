@@ -7,6 +7,7 @@ import { AppThemeProvider } from '@/styles/themes/AppThemeProvider';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/shared/i18n/config';
 import { catalogTranslations } from '../i18n';
+import { CartProvider, ToastProvider } from '@/shared/providers';
 
 // Register catalog translations
 i18n.addResourceBundle('en', 'catalog', catalogTranslations.en, true, true);
@@ -55,7 +56,11 @@ const renderCatalogSearch = (props = {}) => {
   return render(
     <I18nextProvider i18n={i18n}>
       <AppThemeProvider>
-        <CatalogSearch {...props} />
+        <ToastProvider>
+          <CartProvider>
+            <CatalogSearch {...props} />
+          </CartProvider>
+        </ToastProvider>
       </AppThemeProvider>
     </I18nextProvider>
   );

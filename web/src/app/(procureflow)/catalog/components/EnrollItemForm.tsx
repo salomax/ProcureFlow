@@ -123,10 +123,13 @@ export function EnrollItemForm({
       fullWidth
       data-testid="enroll-item-dialog"
     >
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        void handleSubmit(handleFormSubmit)(e);
-      }}>
+      <form 
+        role="form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void handleSubmit(handleFormSubmit)(e);
+        }}
+      >
         <DialogTitle>{t('enrollForm.title')}</DialogTitle>
         <DialogContent sx={{ py: 4 }}>
           <Box sx={{ 
