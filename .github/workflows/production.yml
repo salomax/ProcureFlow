@@ -28,7 +28,7 @@ jobs:
   # ============================================
   ci-checks:
     name: CI Checks
-    uses: ./.github/workflows/ci.yml
+    uses: ./ci.yml
     secrets: inherit
 
   # ============================================
@@ -37,9 +37,9 @@ jobs:
   build:
     name: Build for Production
     needs: [ci-checks]
-    uses: ./.github/workflows/reusable/build.yml
+    uses: ./reusable/build.yml
     with:
-      image_tag: ${{ github.event.inputs.version || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
+      image_tag: ${{ github.event.inputs.version || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || github.sha }}
     secrets: inherit
 
   # ============================================

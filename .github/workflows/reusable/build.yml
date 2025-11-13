@@ -68,7 +68,7 @@ jobs:
           IMAGE_DIGEST=$(docker images --format "{{.ID}}" | head -1)
           if [ -n "${{ inputs.image_tag }}" ]; then
             IMAGE_TAG="${{ inputs.image_tag }}"
-          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+          elif [ "${{ github.event_name }}" == "pull_request" ] && [ -n "${{ github.event.pull_request.number }}" ]; then
             IMAGE_TAG="pr-${{ github.event.pull_request.number }}-${{ github.sha }}"
           elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
             IMAGE_TAG="main-${{ github.sha }}"
@@ -92,8 +92,8 @@ jobs:
         run: |
           echo "Build completed at $(date)" > build-info.txt
           echo "Commit: ${{ github.sha }}" >> build-info.txt
-          echo "Branch: ${{ github.ref_name }}" >> build-info.txt
-          echo "PR: ${{ github.event.pull_request.number }}" >> build-info.txt
+          echo "Branch: ${{ github.ref_name || 'unknown' }}" >> build-info.txt
+          echo "PR: ${{ github.event.pull_request.number || 'N/A' }}" >> build-info.txt
           echo "Image Digest: ${{ steps.meta.outputs.digest }}" >> build-info.txt
           echo "Image Tag: ${{ steps.meta.outputs.tags }}" >> build-info.txt
 
@@ -105,7 +105,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-${{ github.event.pull_request.number || github.sha }}
+          name: build-artifacts-${{ github.event.pull_request.number || github.sha || 'unknown' }}
           path: |
             build-info.txt
             image-list.txt

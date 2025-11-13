@@ -6,9 +6,10 @@ on:
   push:
     branches:
       - main
+  workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref || github.event.workflow_run.head_branch || 'manual' }}
   cancel-in-progress: true
 
 env:
@@ -26,7 +27,7 @@ jobs:
       matrix:
         service: [app, assistant, security, common]
       fail-fast: false
-    uses: ./.github/workflows/reusable/backend-tests.yml
+    uses: ./reusable/backend-tests.yml
     with:
       service: ${{ matrix.service }}
 
@@ -35,14 +36,14 @@ jobs:
   # ============================================
   frontend-tests:
     name: Frontend Tests
-    uses: ./.github/workflows/reusable/frontend-tests.yml
+    uses: ./reusable/frontend-tests.yml
 
   # ============================================
   # Security Scan
   # ============================================
   security-scan:
     name: Security Scan
-    uses: ./.github/workflows/reusable/security-scan.yml
+    uses: ./reusable/security-scan.yml
 
   # ============================================
   # Build Docker Images
@@ -50,6 +51,6 @@ jobs:
   build:
     name: Build Docker Images
     needs: [backend-tests, frontend-tests, security-scan]
-    uses: ./.github/workflows/reusable/build.yml
+    uses: ./reusable/build.yml
     secrets: inherit
 
