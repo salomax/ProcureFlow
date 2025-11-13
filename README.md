@@ -481,3 +481,5 @@ graph TD
   O -- no --> P[Auto-rollback to previous digest]
   O -- yes --> Q[Complete Release & Notify]
 ```
+
+⚠️ CI/CD pipeline has not been implemented fully but the current source has kept in the solution in order to demonstrate the concept
