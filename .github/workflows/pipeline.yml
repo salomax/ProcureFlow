@@ -69,7 +69,7 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.discover-services.outputs.services) }}
       fail-fast: false
-    uses: ./.github/workflows/reusable/backend-tests.yml
+    uses: ./backend-tests-reusable.yml
     with:
       service: ${{ matrix.service }}
 
