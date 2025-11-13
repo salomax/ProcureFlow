@@ -54,7 +54,7 @@ abstract class BaseIntegrationTest : TestPropertyProvider {
   }
 
   @BeforeEach
-  fun setUp() {
+  open fun setUp() {
     // Test PG test container
     if (PostgresIntegrationTest::class.isSuperclassOf(this::class)) {
       val pgContainer = PostgresTestContainer.container

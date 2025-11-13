@@ -20,7 +20,6 @@ export const SaveCatalogItemDocument = gql`
   }
 }
     ${CatalogItemFieldsFragmentDoc}`;
-export type SaveCatalogItemMutationFn = ApolloReactCommon.MutationFunction<SaveCatalogItemMutation, SaveCatalogItemMutationVariables>;
 
 /**
  * __useSaveCatalogItemMutation__
@@ -45,4 +44,3 @@ export function useSaveCatalogItemMutation(baseOptions?: ApolloReactHooks.Mutati
       }
 export type SaveCatalogItemMutationHookResult = ReturnType<typeof useSaveCatalogItemMutation>;
 export type SaveCatalogItemMutationResult = ApolloReactCommon.MutationResult<SaveCatalogItemMutation>;
-export type SaveCatalogItemMutationOptions = ApolloReactCommon.BaseMutationOptions<SaveCatalogItemMutation, SaveCatalogItemMutationVariables>;

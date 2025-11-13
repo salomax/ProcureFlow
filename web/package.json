@@ -29,7 +29,7 @@
     "psi:desktop": "psi http://localhost:3000 --strategy=desktop",
     "sitemap": "next-sitemap",
     "postbuild": "next-sitemap",
-    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen": "graphql-codegen --config codegen.ts && node scripts/fix-generated-types.mjs",
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
     "postinstall": "node scripts/postinstall.mjs",
     "test:e2e": "playwright test",

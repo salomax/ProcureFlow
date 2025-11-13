@@ -101,7 +101,7 @@ export function useCatalog(options: UseCatalogOptions = {}): UseCatalogReturn {
   const [saveCatalogItemMutation, { loading: enrollLoading, error: enrollError }] = useSaveCatalogItemMutation();
 
   // Derived data
-  const searchResults = searchData?.searchCatalogItems || [];
+  const searchResults = (searchData?.searchCatalogItems || []).filter((item): item is NonNullable<typeof item> => item != null);
 
   // Enrollment operation
   const enrollItem = useCallback(async (data: CatalogItemFormData) => {

@@ -553,3 +553,4 @@ mutation ClearConversation($sessionId: String!) {
 - [Implementation Guide](./implementation-prompt.md) - Technical implementation details
 - [GraphQL Schema](../../../service/kotlin/assistant/src/main/resources/graphql/schema.graphqls) - Full GraphQL schema definition
 
+

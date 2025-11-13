@@ -46,7 +46,7 @@ export function useConversationLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
           const options = {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useLazyQuery<ConversationQuery, ConversationQueryVariables>(ConversationDocument, options);
         }
-export function useConversationSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<ConversationQuery, ConversationQueryVariables>) {
+export function useConversationSuspenseQuery(baseOptions: ApolloReactHooks.SkipToken | (ApolloReactHooks.SuspenseQueryHookOptions<ConversationQuery, ConversationQueryVariables> & { variables: ConversationQueryVariables })) {
           const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
           return ApolloReactHooks.useSuspenseQuery<ConversationQuery, ConversationQueryVariables>(ConversationDocument, options);
         }

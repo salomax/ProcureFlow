@@ -37,13 +37,14 @@ export const CheckoutConfirmation: React.FC<CheckoutConfirmationProps> = ({
   onContinueShopping,
 }) => {
   const { t } = useTranslation(cartTranslations);
-  const orderId = React.useMemo(() => {
+  // Use useState with lazy initializer to compute values only once on mount
+  const [orderId] = React.useState(() => {
     // Generate a simple order ID (in real app, this would come from server)
     return `ORD-${Date.now().toString(36).toUpperCase()}`;
-  }, []);
-  const timestamp = React.useMemo(() => {
+  });
+  const [timestamp] = React.useState(() => {
     return new Date().toLocaleString();
-  }, []);
+  });
 
   return (
     <Stack gap={3} sx={{ p: 3, textAlign: "center" }}>

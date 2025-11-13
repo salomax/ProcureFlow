@@ -158,6 +158,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         // Update quantity of existing item
         const updated = [...currentItems];
         const existingItem = updated[existingIndex];
+        if (!existingItem) return currentItems;
         const newQuantity = Math.min(
           MAX_QUANTITY,
           existingItem.quantity + quantity
@@ -169,6 +170,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         return updated;
       } else {
         // Add new item
+        if (!itemId || !input.catalogItemId || !input.name || input.priceCents === undefined) {
+          return currentItems;
+        }
         const newItem: CartItem = {
           id: itemId,
           catalogItemId: input.catalogItemId,
@@ -205,8 +209,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       // Update quantity
       const updated = [...currentItems];
+      const existingItem = currentItems[index];
+      if (!existingItem) return currentItems;
       updated[index] = {
-        ...currentItems[index],
+        ...existingItem,
         quantity: validatedQuantity,
       };
       return updated;

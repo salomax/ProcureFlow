@@ -2,6 +2,236 @@
 
 A comprehensive solution demonstrating how AI agents make workflows way better.
 
+## How to run ProcedureFlow
+
+After clone the project and ensure you have docker engine, docker-compose cmd available locally:
+
+```bash
+git clone https://github.com/salomax/ProcureFlow.git
+docker -v
+docker-compose -v
+```
+
+Create `.env` and `.local.env` on root project folder like this:
+
+```plaintext
+# --- Global ---
+APP_NAME=procureflow
+APP_LOCALE=en-US
+GRAPHQL_ENDPOINT: http://router:4000/graphql
+
+# --- Database ---
+POSTGRES_USER=procureflow
+POSTGRES_PASSWORD=procureflow
+POSTGRES_DB=procureflow_db
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+DATABASE_URL=jdbc:postgresql://postgres:5432/procureflow_db
+
+# --- Grafana ---
+GF_SECURITY_ADMIN_USER=admin
+GF_SECURITY_ADMIN_PASSWORD=admin
+
+# --- AI ---
+GEMINI_API_KEY=<add your Gemini API Key here>
+```
+
+On project folder, the the docker-compose command:
+
+```bash
+docker-compose -f infra/docker/docker-compose.yml up -d
+```
+It's going to take a while but if everything goes as expected, you can check the output like:
+
+```bash
+ ✔ app                                      Built
+ ✔ assistant                                Built
+ ✔ security                                 Built
+ ✔ web                                      Built
+ ✔ Network docker_postgres-internal         Created
+ ✔ Network docker_default                   Created
+ ✔ Volume "docker_loki-data"                Created
+ ✔ Volume "docker_pgdata"                   Created
+ ✔ Container procureflow-postgres           Healthy
+ ✔ Container procureflow-graphql-router     Started
+ ✔ Container procureflow-web                Started
+ ✔ Container procureflow-prometheus         Started
+ ✔ Container procureflow-pgbouncer          Healthy
+ ✔ Container procureflow-loki               Started
+ ✔ Container procureflow-promtail           Started
+ ✔ Container procureflow-grafana            Started
+ ✔ Container procureflow-app                Started
+ ✔ Container procureflow-postgres-exporter  Started
+ ✔ Container procureflow-security           Started
+ ✔ Container procureflow-assistant          Started
+```
+
+The services will be avaliable at:
+
+- **Web Interface** http://localhost:3000
+- **GrapqhQL API** http://localhost:4000/graphql
+- **Postgres(Pgbouncer)** postgresql://procureflow:procureflow@localhost:6432/procureflow_db
+- **Grafana** http://localhost:3001
+- **Prometheus** http://localhost:9090
+
+## How to test
+
+### Managing Catalog Items
+
+
+
+### Checkout Catalog Items
+
+
+
+### AI Chat
+
+
+
+### API
+
+
+The federated GrapqhQL router is exposed at `http://localhost:4000/graphql`.
+
+
+### Search Catalog Items
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { searchCatalogItems(query: \"laptop\") { id name category priceCents status description } }"
+  }'
+```
+
+### Get Catalog Item by ID
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { catalogItem(id: \"item-id\") { id name category priceCents status description createdAt updatedAt } }"
+  }'
+```
+
+### Create/Update Catalog Item
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { saveCatalogItem(input: { name: \"Laptop Pro\" category: MATERIAL priceCents: 129999 status: ACTIVE description: \"High-performance laptop\" }) { id name category priceCents status } }"
+  }'
+```
+
+### Send Chat Message
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { chat(input: { sessionId: \"session-123\" message: \"What laptops are available?\" }) { sessionId response } }"
+  }'
+```
+
+### Get Conversation
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { conversation(sessionId: \"session-123\") { sessionId messageCount lastMessage } }"
+  }'
+```
+
+### Clear Conversation
+
+```bash
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { clearConversation(sessionId: \"session-123\") }"
+  }'
+```
+
+
+## Observability
+
+
+
+# Architecture
+
+The project is broken down into clean layers: the client layer (Next.js web app) talks to the API gateway layer (Apollo Router doing GraphQL Federation), which routes requests to the service layer (Kotlin/Micronaut microservices with resolvers, business logic, and data access), and everything eventually hits the data layer (PostgreSQL). Each layer has a clear job and they're all containerized so you can scale and deploy them independently.
+
+![Architecture Diagram](etc/images/image.png)
+
+## Neotool
+
+[Neotool](https://github.com/salomax/neotool) is a modular full-stack boilerplate framework that accelerates development by providing a pre-configured, production-ready foundation with clean architecture patterns—including GraphQL Federation, type-safe end-to-end code generation, a complete design system, and containerized infrastructure—all wired together so teams can focus on building features instead of setting up the stack.
+
+Neotool UI layer includes a comprehensive design system with Material-UI components, a design token-based theme system with light/dark modes, domain-based internationalization (i18n), type-safe GraphQL operations with code generation, custom React hooks for business logic, comprehensive testing setup (Vitest, React Testing Library, Playwright), and Storybook for component documentation.
+
+As IDE with AI-code editor we've been testing with Cursor. But it might be applied to similar ones.
+
+
+### Neotool Spec-Driven Development
+
+[Neotool](https://github.com/salomax/neotool) uses Spec-Driven Development, meaning the spec in the [spec/](spec/) folder is the single source of truth for all architecture and patterns. Unlike typical development where knowledge is scattered, Neotool's spec is highly structured and optimized for AI. It uses metadata and tags to make sure AI assistants like Cursor can easily understand the project's context and instantly follow established architectural rules.
+
+The main benefit is speed and consistency. Developers just describe a feature naturally, and the AI generates production-ready code that already complies with complex patterns like GraphQL Federation and Clean Architecture. This cuts down implementation time significantly, eliminates manual guesswork, and keeps the entire codebase consistently following the same high-quality standards.
+
+#### Step 1 - Generate Feature File
+
+The first step in this workflow is creating a **Gherkin feature file** (`.feature`) that describes the feature in a structured, human-readable format using the Given-When-Then syntax.
+
+This file serves as an specification that defines user stories, acceptance criteria, and test scenarios—covering happy paths, error cases, and edge cases—all in plain language that both humans and AI can understand.
+
+Here, we can review the feature flow by the user perspective and adjust it if needed.
+
+**Example prompt to Cursor:**
+
+```
+Create a Gherkin feature file for a new feature: "User Profile Management"
+
+The feature should allow users to:
+- View their profile information (name, email, role, department)
+- Update their profile information
+- Change their password
+- Upload a profile picture
+```
+
+#### Step 2 - Generate Implementation Prompt
+
+Once the feature file is created, the next step is requesting Cursor to generate a comprehensive **implementation prompt** that breaks down the entire feature into a detailed implementation plan. 
+
+This prompt serves as a blueprint that lists all artifacts that will be generated across every layer of the stack, migration, domain models, JPA entities, repositories, services, GraphQL schemas and resolvers, frontend operations, hooks, components, pages, and tests—all organized by implementation phases and cross-referenced with the Neotool specification.
+
+This is crutial because we review if everything is placed as expected.
+
+**Example prompt to Cursor:**
+
+```
+Based on feature file at docs/features/user/profile-management.feature and generate a comprehensive implementation prompt that details all artifacts that need to be created to implement this feature according to the Neotool specification.
+```
+
+#### Step 3 - Plan and Build
+
+With the implementation prompt ready, this step uses Cursor's **Plan** mode (not Agent mode) to execute the implementation. 
+
+Plan mode works by breaking down the implementation prompt into discrete, sequential steps and executing them one by one, creating all the artifacts systematically across each phase.
+
+**Example prompt to Cursor:**
+
+```
+Using Plan mode, implement the feature according to docs/features/user/implementation-prompt.md
+```
+
+#### Step 4 - Manual Review & Test
+
+After Cursor generates all the artifacts using Plan mode, this step involves manually reviewing the generated code and running tests to validate the implementation. 
+
+This is a critical quality assurance step that ensures the generated code meets requirements, follows best practices, and integrates correctly with the existing codebase.
+
 
 # Use Cases
 
@@ -35,7 +265,6 @@ If not found, they can register a new item (name, category, description, price, 
 
 This step had as output 2 documents:
 - [implementation-prompt.md](docs/features/catalog/implementation-prompt.md) (rules for implementation)
-- [QUICK_START.md](docs/features/catalog/QUICK_START.md) (sort of guideline for Cursor)
 
 ## Step 3 - Plan and build the feature
 
@@ -121,3 +350,75 @@ After some backs and forths to adjust the UI we were able to run the catalog pag
 
 
 DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -f infra/docker/docker-compose.yml up -d
+
+
+
+
+# CI/CD
+
+## Test → Build → CR → Preview → Staging → Production 
+
+This model validates code quality before merge (Preview Apps), validates system integration after merge (Staging), and promotes the same artifact digest to Production with gates, rollouts, and fast rollback.
+
+### Goals & Principles
+
+- Shift-left quality: catch issues in PR with automated checks + preview environments.
+
+- Staging as rehearsal: validate real infra, configs, and secrets after merge.
+
+- Promote, don’t rebuild: production uses the exact image digest tested in staging.
+
+- Safe releases: environments, approvals, canaries/blue-green, and automatic rollback.
+
+
+## Stages & Purpose
+
+### Pull Request CI + Preview App (Ephemeral)
+
+Test, build, lint, typecheck, security scan; deploy a temporary environment per PR
+
+PR is approved only after preview validation (automated + manual)
+
+### Staging (Shared, Persistent)
+
+Upon merge to main, deploy to staging using the built images (by tag/digest).
+
+Automated smoke/E2E tests, validate end-to-end integration (infra/secrets/DB migrations) close to prod.
+
+### Promotion to Production (Tag/Release)
+
+Deterministic deployments, create a semantic tag vX.Y.Z; promote the same digest from staging to prod.
+
+Gate via GitHub Environments (approvals), roll out (canary/blue-green), monitor, and auto-rollback if metrics degrade.
+
+### Post-Release Verification & Rollback
+
+Health checks, SLO/SLA monitors, error-rate guards.
+
+Stable prod with auditable release trail.
+
+## Flowchart
+
+```mermaid
+graph TD
+  A[Developer opens PR] --> B[PR CI: build/lint/test]
+  B --> C{Build OK?}
+  C -- no --> C1[Fix & push]
+  C1 --> B
+  C -- yes --> D[Deploy Preview App]
+  D --> E[Validation on Preview App]
+  E --> F{Approve PR?}
+  F -- no --> C1
+  F -- yes --> G[Merge to main]
+  G --> H[Deploy to Staging using same images]
+  H --> I[Run DB migrations along first execution]
+  I --> J[Smoke + E2E + Contract tests + Observability checks]
+  J --> K{All checks green?}
+  K -- no --> H1[Fix → new PR cycle]
+  K -- yes --> L[Create Tag with GitHub Release]
+  L --> M[Deploy to Production with Canary/Blue-Green]
+  M --> N[Post-release health checks & SLO guardrails]
+  N --> O{Healthy?}
+  O -- no --> P[Auto-rollback to previous digest]
+  O -- yes --> Q[Complete Release & Notify]
+```

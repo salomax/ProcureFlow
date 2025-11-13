@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EnrollItemForm } from '../components/EnrollItemForm';
 import { AppThemeProvider } from '@/styles/themes/AppThemeProvider';
@@ -47,10 +47,11 @@ describe('EnrollItemForm', () => {
   it('validates required fields', async () => {
     renderEnrollForm({ onSubmit: mockOnSubmit, onClose: mockOnClose });
     
-    const form = screen.getByTestId('enroll-item-dialog').querySelector('form');
+    const dialog = screen.getByTestId('enroll-item-dialog');
+    const form = within(dialog).getByRole('form');
     expect(form).toBeInTheDocument();
     
-    fireEvent.submit(form!);
+    fireEvent.submit(form);
     
     expect(await screen.findByText(/Item name is required/i)).toBeInTheDocument();
   });
@@ -66,10 +67,11 @@ describe('EnrollItemForm', () => {
     await user.clear(priceInput);
     await user.type(priceInput, '0');
     
-    const form = screen.getByTestId('enroll-item-dialog').querySelector('form');
+    const dialog = screen.getByTestId('enroll-item-dialog');
+    const form = within(dialog).getByRole('form');
     expect(form).toBeInTheDocument();
     
-    fireEvent.submit(form!);
+    fireEvent.submit(form);
     
     expect(await screen.findByText(/Price must be greater than 0/i)).toBeInTheDocument();
   });

@@ -10,7 +10,7 @@ const GRAPHQL_ENDPOINT =
 
 // Use supergraph schema file if available, otherwise fall back to endpoint
 const SCHEMA_SOURCE = process.env.GRAPHQL_SCHEMA_PATH || 
-  '../contracts/graphql/supergraph/supergraph.dev.graphql';
+  '../contracts/graphql/supergraph/supergraph.local.graphql';
 
 const config: CodegenConfig = {
   // Overwrite existing generated files instead of merging
@@ -77,19 +77,26 @@ const config: CodegenConfig = {
         // Generate React hooks for all operations
         withHooks: true,
         
-        // Use Apollo Client v3 hooks API to avoid import issues with v4
-        // v4 has hooks in @apollo/client/react but types in different modules
-        // v3 provides more stable and consistent import structure
-        reactApolloVersion: 3,
+        // Use Apollo Client v4 hooks API
+        reactApolloVersion: 4,
         
         // Import React hooks from the correct module (@apollo/client/react)
         // This fixes "useQuery is not a function" errors by ensuring hooks
         // are imported from the module that actually exports them
         apolloReactHooksImportFrom: '@apollo/client/react',
         
-        // Import common types from the same module for consistency
-        // Ensures all Apollo-related types come from the same source
+        // Import common types from @apollo/client/react (v4 types are in react package)
+        // Note: This should import MutationResult and QueryResult from @apollo/client/react
         apolloReactCommonImportFrom: '@apollo/client/react',
+        
+        // Don't generate MutationFunction - it doesn't exist in Apollo Client v4
+        withMutationFn: false,
+        
+        // Don't generate component wrappers
+        withComponent: false,
+        
+        // Add documentation blocks
+        addDocBlocks: true,
         
         // Type generation settings (same as base types for consistency)
         defaultScalarType: 'unknown',
