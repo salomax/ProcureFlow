@@ -1,8 +1,12 @@
 micronaut:
   application:
     name: procureflow-service
+  executors:
+    blocking:
+      virtual: true
   server:
     port: 8080
+    thread-selection: blocking
     cors:
       enabled: true
       configurations:

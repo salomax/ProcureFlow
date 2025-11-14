@@ -105,6 +105,10 @@ object GraphQLArgumentUtils {
     /**
      * Creates a data fetcher with automatic argument validation.
      * This reduces boilerplate by automatically validating required arguments.
+     * 
+     * Note: This data fetcher will run on whatever thread the GraphQL execution is using.
+     * If the controller method has @ExecuteOn(TaskExecutors.BLOCKING), the entire GraphQL
+     * execution (including data fetchers) should run on virtual threads.
      */
     fun <T> createValidatedDataFetcher(
         requiredArgs: List<String> = emptyList(),

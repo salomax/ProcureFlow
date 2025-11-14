@@ -5,8 +5,11 @@ import io.github.salomax.procureflow.app.catalog.domain.CatalogItemCategory
 import io.github.salomax.procureflow.app.catalog.domain.CatalogItemStatus
 import io.github.salomax.procureflow.app.catalog.graphql.dto.CatalogItemInputDTO
 import io.github.salomax.procureflow.app.catalog.service.CatalogItemService
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import jakarta.inject.Singleton
 import jakarta.validation.Validator
+import mu.KotlinLogging
 import java.util.*
 
 /**
@@ -17,11 +20,14 @@ class CatalogItemResolver(
     private val catalogItemService: CatalogItemService,
     private val validator: Validator
 ) {
+    private val logger = KotlinLogging.logger {}
     
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun searchCatalogItems(query: String): List<CatalogItem> {
         return catalogItemService.search(query)
     }
     
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun catalogItem(id: String): CatalogItem? {
         return try {
             val uuid = UUID.fromString(id)
@@ -31,6 +37,7 @@ class CatalogItemResolver(
         }
     }
     
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun saveCatalogItem(input: Map<String, Any?>): CatalogItem {
         // Map GraphQL input to DTO
         val dto = mapToInputDTO(input)

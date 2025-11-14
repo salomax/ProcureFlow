@@ -1,8 +1,12 @@
 micronaut:
   application:
     name: procureflow-service
+  executors:
+    blocking:
+      virtual: true
   server:
     port: 8081
+    thread-selection: blocking
     cors:
       enabled: true
       configurations:
@@ -21,6 +25,16 @@ micronaut:
           allow-credentials: true
           max-age: 3600
   security:
+    enabled: true
+    
+  # Micrometer Configuration for Metrics Collection
+  metrics:
+    enabled: true
+    export:
+      prometheus:
+        enabled: true
+        step: PT15S
+  observation:
     enabled: true
 
 # JWT Configuration
@@ -89,16 +103,6 @@ flyway:
       baseline-on-migrate: true
       baseline-version: 0
       table: flyway_schema_history_app
-
-# Micrometer Configuration for Metrics Collection
-  metrics:
-    enabled: true
-    export:
-      prometheus:
-        enabled: true
-        step: PT15S
-  observation:
-    enabled: true
 
 # Management Endpoints Configuration
 endpoints:

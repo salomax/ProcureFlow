@@ -10,6 +10,8 @@ import io.github.salomax.procureflow.common.graphql.payload.GraphQLPayloadFactor
 import io.github.salomax.procureflow.security.model.UserEntity
 import io.github.salomax.procureflow.security.service.AuthenticationService
 import io.github.salomax.procureflow.security.repo.UserRepository
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import jakarta.inject.Singleton
 import mu.KotlinLogging
 
@@ -34,6 +36,7 @@ class SecurityAuthResolver(
     /**
      * Sign in mutation resolver
      */
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun signIn(input: Map<String, Any?>): GraphQLPayload<SignInPayloadDTO> {
         return try {
             val email = input["email"] as? String ?: throw IllegalArgumentException("Email is required")
@@ -79,6 +82,7 @@ class SecurityAuthResolver(
      * @param token The JWT access token from Authorization header
      * @return UserDTO if token is valid, null otherwise
      */
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun getCurrentUser(token: String?): UserDTO? {
         if (token == null) {
             logger.debug { "No token provided" }

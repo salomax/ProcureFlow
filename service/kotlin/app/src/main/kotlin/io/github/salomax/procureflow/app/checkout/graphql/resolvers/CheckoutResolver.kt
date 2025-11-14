@@ -7,6 +7,8 @@ import io.github.salomax.procureflow.app.checkout.graphql.dto.CheckoutInputDTO
 import io.github.salomax.procureflow.app.checkout.graphql.dto.CheckoutItemInputDTO
 import io.github.salomax.procureflow.app.checkout.service.CheckoutLogService
 import io.micronaut.json.tree.JsonNode
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import jakarta.inject.Singleton
 import jakarta.validation.Validator
 
@@ -19,6 +21,7 @@ class CheckoutResolver(
     private val validator: Validator
 ) {
     
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun checkout(input: Map<String, Any?>): CheckoutLog {
         // Map GraphQL input to DTO
         val dto = mapToInputDTO(input)
