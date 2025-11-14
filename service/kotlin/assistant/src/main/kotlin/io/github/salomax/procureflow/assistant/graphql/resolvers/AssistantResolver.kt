@@ -2,6 +2,8 @@ package io.github.salomax.procureflow.assistant.graphql.resolvers
 
 import io.github.salomax.procureflow.assistant.agent.AssistantAgent
 import io.github.salomax.procureflow.assistant.service.ConversationService
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import jakarta.inject.Singleton
 import kotlinx.coroutines.runBlocking
 
@@ -11,6 +13,7 @@ class AssistantResolver(
     private val conversationService: ConversationService
 ) {
     
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun chat(input: Map<String, Any?>): ChatResponse {
         val sessionId = extractField<String>(input, "sessionId")
         val message = extractField<String>(input, "message")
@@ -26,6 +29,7 @@ class AssistantResolver(
         }
     }
     
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun conversation(sessionId: String): Conversation? {
         val context = conversationService.getContext(sessionId) ?: return null
         
@@ -36,6 +40,7 @@ class AssistantResolver(
         )
     }
     
+    @ExecuteOn(TaskExecutors.BLOCKING)
     fun clearConversation(sessionId: String): Boolean {
         conversationService.clearContext(sessionId)
         return true

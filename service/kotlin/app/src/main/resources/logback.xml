@@ -4,7 +4,7 @@
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <filter class="io.github.salomax.procureflow.common.logging.MDCFilter" />
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%X{correlationId:-}] %-5level %logger{36} - %msg%n</pattern>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
   
@@ -18,7 +18,7 @@
   </logger>
   
   <!-- Micronaut framework logging -->
-  <logger name="io.micronaut" level="INFO" additivity="false">
+  <logger name="io.micronaut" level="DEBUG" additivity="false">
     <appender-ref ref="STDOUT" />
   </logger>
   

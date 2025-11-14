@@ -6,6 +6,8 @@ import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import graphql.language.OperationDefinition
 import graphql.parser.Parser
 import graphql.execution.UnknownOperationException
@@ -35,6 +37,8 @@ open class GraphQLControllerBase(private val graphQL: GraphQL) {
    *    using toSpecification(), ensuring the payload is JSON-serializable without extra annotations.
    */
   @Post(consumes = [APPLICATION_JSON], produces = [APPLICATION_JSON])
+  // This is necessary to ensure the execution runs on a virtual thread
+  @ExecuteOn(TaskExecutors.BLOCKING)
   open fun post(
     @Body request: GraphQLRequest,
     @Header("Authorization") authorization: String?

@@ -42,6 +42,7 @@
 | GraphQL Federation | `service/graphql-federation-architecture.md` | API | graphql, federation, apollo |
 | Database Schema | `service/database-schema-organization.md` | Database | database, schema, organization |
 | JPA Entities | `service/kotlin/jpa-entity.md` | Backend | jpa, entity, kotlin |
+| Virtual Threads | `service/kotlin/virtual-threads.md` | Backend | virtual-threads, java21, performance, concurrency |
 | Testing Guidelines | `service/testing-guidelines.md` | Testing | testing, unit-tests, integration-tests, best-practices |
 
 ### Web Frontend Documentation
@@ -102,6 +103,7 @@ adr/0003-kotlin-micronaut-backend.md
   ├── service/graphql-federation-architecture.md
   ├── service/database-schema-organization.md
   ├── service/kotlin/jpa-entity.md
+  ├── service/kotlin/virtual-threads.md
   └── contracts/graphql-federation.md
 ```
 
@@ -118,7 +120,7 @@ adr/0004-typescript-nextjs-frontend.md
 ## Search Optimization Tags
 
 ### Technology Stack
-- `kotlin`, `micronaut`, `gradle`
+- `kotlin`, `micronaut`, `gradle`, `java21`, `virtual-threads`
 - `typescript`, `react`, `nextjs`
 - `postgresql`, `graphql`, `apollo`
 - `docker`, `kubernetes`, `argo-cd`
@@ -134,6 +136,7 @@ adr/0004-typescript-nextjs-frontend.md
 ### Patterns
 - `dependency-injection`, `repository-pattern`
 - `graphql-resolvers`, `federation-directives`
+- `virtual-threads`, `@ExecuteOn`, `blocking-executor`
 - `server-components`, `client-components`
 - `design-tokens`, `component-system`
 

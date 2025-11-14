@@ -17,6 +17,7 @@
               "environment": "production",
               "version": "${APP_VERSION:-unknown}",
               "instance": "${HOSTNAME:-unknown}",
+              "thread": "%thread",
               "trace_id": "%X{traceId:-}",
               "span_id": "%X{spanId:-}",
               "otel_trace_id": "%X{otel.trace_id:-}",
@@ -38,7 +39,7 @@
         <pattern>service=procureflow-service,environment=production,level=%level,logger=%logger{20}</pattern>
       </label>
       <message>
-        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] %-5level %logger{36} - %msg%n</pattern>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n</pattern>
       </message>
     </format>
     <filter class="io.github.salomax.procureflow.logging.MDCFilter" />
