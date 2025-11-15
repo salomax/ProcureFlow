@@ -101,13 +101,13 @@ jobs:
         with:
           script: |
             const commitSha = '${{ steps.tag.outputs.commit-sha }}';
-            const workflowName = 'Staging Flow';
+            const workflowFile = 'staging.yml';
             
             // Find the staging workflow run for this commit
             const runs = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: workflowName,
+              workflow_id: workflowFile,
               head_sha: commitSha,
               per_page: 1
             });
