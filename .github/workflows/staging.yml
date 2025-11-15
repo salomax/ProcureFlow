@@ -65,9 +65,13 @@ jobs:
     name: Build Docker Images
     runs-on: ubuntu-latest
     needs: discover-services
+    permissions:
+      contents: read
+      packages: write
     outputs:
-      image-digest: ${{ steps.meta.outputs.digest }}
+      image-digest: ${{ steps.push-images.outputs.app-digest }}
       image-tag: ${{ steps.meta.outputs.tags }}
+      image-reference: ghcr.io/${{ steps.push-images.outputs.owner }}/procureflow-app:${{ steps.meta.outputs.tags }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -124,13 +128,77 @@ jobs:
           echo "Image digest: ${{ steps.meta.outputs.digest }}"
           echo "Image tag: ${{ steps.meta.outputs.tags }}"
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push Docker images
+        id: push-images
+        working-directory: infra/docker
+        run: |
+          REGISTRY="ghcr.io"
+          OWNER="${{ github.repository_owner }}"
+          IMAGE_TAG="${{ steps.meta.outputs.tags }}"
+          
+          # Get the actual image names from docker compose
+          # Docker Compose names images as: {project}_{service}:latest
+          # Project name defaults to directory name (docker)
+          for service in security app assistant web; do
+            IMAGE_NAME="${REGISTRY}/${OWNER}/procureflow-${service}"
+            
+            # Get the actual image name from docker compose images command
+            # Format: {project}_{service}:latest
+            BUILT_IMAGE=$(docker compose -f docker-compose.yml images -q ${service} 2>/dev/null | xargs docker inspect --format='{{.RepoTags}}' 2>/dev/null | tr -d '[]' | cut -d':' -f1 | head -1 || echo "")
+            
+            # Fallback: try common naming patterns
+            if [ -z "$BUILT_IMAGE" ]; then
+              for pattern in "docker-${service}" "${service}"; do
+                if docker images --format "{{.Repository}}" | grep -q "^${pattern}$"; then
+                  BUILT_IMAGE="${pattern}"
+                  break
+                fi
+              done
+            fi
+            
+            # If still not found, use service name as last resort
+            if [ -z "$BUILT_IMAGE" ]; then
+              BUILT_IMAGE="${service}"
+            fi
+            
+            echo "Tagging ${BUILT_IMAGE}:latest -> ${IMAGE_NAME}:${IMAGE_TAG}"
+            
+            # Tag with registry prefix (use latest tag from built image)
+            docker tag "${BUILT_IMAGE}:latest" "${IMAGE_NAME}:${IMAGE_TAG}"
+            docker tag "${BUILT_IMAGE}:latest" "${IMAGE_NAME}:latest"
+            
+            # Push both tags
+            docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+            docker push "${IMAGE_NAME}:latest"
+            
+            echo "✅ Pushed ${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "✅ Pushed ${IMAGE_NAME}:latest"
+          done
+          
+          # Get the digest of the app image (primary service) for metadata
+          # Use docker manifest inspect to get the digest after push
+          sleep 2
+          APP_DIGEST=$(docker manifest inspect "${REGISTRY}/${OWNER}/procureflow-app:${IMAGE_TAG}" 2>/dev/null | grep -o '"digest":"[^"]*' | head -1 | cut -d'"' -f4 || echo "")
+          echo "app-digest=${APP_DIGEST}" >> $GITHUB_OUTPUT
+          echo "registry=${REGISTRY}" >> $GITHUB_OUTPUT
+          echo "owner=${OWNER}" >> $GITHUB_OUTPUT
+
       - name: Save build artifacts
         run: |
           echo "Build completed at $(date)" > build-info.txt
           echo "Commit: ${{ github.sha }}" >> build-info.txt
           echo "Branch: ${{ github.ref_name }}" >> build-info.txt
-          echo "Image Digest: ${{ steps.meta.outputs.digest }}" >> build-info.txt
+          echo "Image Digest: ${{ steps.push-images.outputs.app-digest }}" >> build-info.txt
           echo "Image Tag: ${{ steps.meta.outputs.tags }}" >> build-info.txt
+          echo "Registry: ${{ steps.push-images.outputs.registry }}/${{ steps.push-images.outputs.owner }}" >> build-info.txt
+          echo "Image Reference: ghcr.io/${{ steps.push-images.outputs.owner }}/procureflow-app:${{ steps.meta.outputs.tags }}" >> build-info.txt
 
       - name: Save image list
         run: |
